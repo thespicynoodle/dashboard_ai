@@ -88,8 +88,8 @@ You are an expert data analyst. Your task is to analyze CSV data and create a co
 - **User Instructions**: Specific focus areas for the dashboard.
 
 ## DASHBOARD LAYOUT REQUIREMENTS
-- **Top Row**: 3 cards for key metrics.
-- **Bottom Section**: 3 charts for visual insights.
+- **Top Row**: 3-4 cards for key metrics.
+- **Bottom Section**: 3-5 charts for visual insights. Can be in two rows if necessary 
 
 ## CATEGORICAL DATA HANDLING
 - For charts using a categorical column (e.g., for an axis or grouping), you MUST identify all its unique values from the 'sample_values' in the column analysis.

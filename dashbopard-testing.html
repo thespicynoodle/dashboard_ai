@@ -1,0 +1,487 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>USA Population Growth and Death Rates Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <!-- Papa Parse -->
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+    <style>
+        body {
+            background: #f8fafc;
+            color: #1a237e;
+            font-family: 'Segoe UI', 'Roboto', Arial, sans-serif;
+        }
+        .dashboard-header {
+            background: linear-gradient(90deg, #1a237e 0%, #3949ab 100%);
+            color: #fff;
+            padding: 2rem 1rem 1rem 1rem;
+            border-radius: 0 0 1.5rem 1.5rem;
+            box-shadow: 0 4px 24px rgba(26,35,126,0.08);
+            margin-bottom: 2rem;
+        }
+        .dashboard-title {
+            font-size: 2.2rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+        .dashboard-desc {
+            font-size: 1.1rem;
+            font-weight: 400;
+            margin-top: 0.5rem;
+            color: #e3e7fd;
+        }
+        .upload-section {
+            margin-top: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .metric-card {
+            background: #fff;
+            border: none;
+            border-radius: 1rem;
+            box-shadow: 0 2px 12px rgba(26,35,126,0.07);
+            padding: 1.5rem 1.2rem;
+            transition: box-shadow 0.2s;
+            min-height: 140px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .metric-card .card-title {
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: #3949ab;
+            margin-bottom: 0.5rem;
+        }
+        .metric-card .card-value {
+            font-size: 2.1rem;
+            font-weight: 700;
+            color: #1a237e;
+            margin-bottom: 0.2rem;
+        }
+        .metric-card .card-desc {
+            font-size: 0.97rem;
+            color: #5c6bc0;
+        }
+        .chart-card {
+            background: #fff;
+            border: none;
+            border-radius: 1rem;
+            box-shadow: 0 2px 12px rgba(26,35,126,0.07);
+            padding: 1.2rem 1rem 1.5rem 1rem;
+            margin-bottom: 1.5rem;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        .chart-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #1a237e;
+            margin-bottom: 0.7rem;
+            text-align: center;
+        }
+        .file-input-label {
+            font-weight: 600;
+            color: #1a237e;
+            margin-right: 1rem;
+        }
+        .file-input {
+            display: inline-block;
+            width: auto;
+        }
+        .error-message {
+            color: #c62828;
+            font-weight: 600;
+            margin-top: 1rem;
+            margin-bottom: 0;
+        }
+        @media (max-width: 991.98px) {
+            .dashboard-header {
+                padding: 1.5rem 0.5rem 1rem 0.5rem;
+            }
+            .metric-card {
+                margin-bottom: 1.2rem;
+            }
+        }
+        @media (max-width: 767.98px) {
+            .dashboard-title {
+                font-size: 1.5rem;
+            }
+            .metric-card .card-value {
+                font-size: 1.5rem;
+            }
+            .chart-title {
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-header text-center">
+        <div class="dashboard-title">USA Population Growth and Death Rates Dashboard</div>
+        <div class="dashboard-desc">
+            This dashboard provides insights into the population growth and death rates in the United States of America, with breakdowns by year, age group, and sex. It highlights key metrics and visualizes trends and distributions to support demographic and public health analysis.
+        </div>
+    </div>
+    <div class="container">
+        <div class="upload-section text-center">
+            <label for="csvFile" class="file-input-label">Upload CSV Data:</label>
+            <input type="file" id="csvFile" class="form-control-file file-input" accept=".csv">
+            <div id="error-message" class="error-message"></div>
+        </div>
+        <div class="row g-4 mb-4">
+            <div class="col-lg-4 col-md-6">
+                <div class="metric-card h-100" id="card-population">
+                    <div class="card-title">Total USA Population (Latest Year)</div>
+                    <div class="card-value" id="total-population">--</div>
+                    <div class="card-desc">Sum of the population across all age and sex groups in the USA for the most recent year available.</div>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-6">
+                <div class="metric-card h-100" id="card-deaths">
+                    <div class="card-title">Total Deaths in USA (Latest Year)</div>
+                    <div class="card-value" id="total-deaths">--</div>
+                    <div class="card-desc">Total number of deaths in the USA for the most recent year, summed across all age and sex groups.</div>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-12">
+                <div class="metric-card h-100" id="card-growth">
+                    <div class="card-title">Population Growth Rate (USA, Last 5 Years)</div>
+                    <div class="card-value" id="growth-rate">--</div>
+                    <div class="card-desc">Percentage growth in total USA population over the last 5 years.</div>
+                </div>
+            </div>
+        </div>
+        <div class="row g-4 mb-4">
+            <div class="col-lg-4 col-md-12">
+                <div class="chart-card h-100">
+                    <div class="chart-title">USA Population Over Time</div>
+                    <canvas id="populationLineChart" height="220"></canvas>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-12">
+                <div class="chart-card h-100">
+                    <div class="chart-title">USA Death Rate by Age Group (Latest Year)</div>
+                    <canvas id="deathBarChart" height="220"></canvas>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-12">
+                <div class="chart-card h-100">
+                    <div class="chart-title">USA Deaths by Sex (Latest Year)</div>
+                    <canvas id="deathPieChart" height="220"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        // Chart.js chart instances
+        let populationLineChart = null;
+        let deathBarChart = null;
+        let deathPieChart = null;
+
+        // Age and Sex categories (ordered)
+        const AGE_CATEGORIES = [
+            '95+ years', '12-23 months', '5-9 years', '10-14 years', '15-19 years', '20-24 years',
+            '25-29 years', '30-34 years', '35-39 years', '40-44 years', '45-49 years', '50-54 years',
+            '55-59 years', '60-64 years', '65-69 years', '70-74 years', '75-79 years', '<1 year',
+            '80-84 years', '85-89 years', '90-94 years', '2-4 years'
+        ];
+        const SEX_CATEGORIES = ['Male', 'Female'];
+
+        // Utility: Format numbers with commas
+        function formatNumber(num) {
+            if (num === null || num === undefined || isNaN(num)) return '--';
+            return num.toLocaleString('en-US');
+        }
+        // Utility: Format percentage
+        function formatPercent(num, decimals=2) {
+            if (num === null || num === undefined || isNaN(num)) return '--';
+            return num.toFixed(decimals) + '%';
+        }
+
+        // Utility: Show error message
+        function showError(msg) {
+            document.getElementById('error-message').textContent = msg;
+        }
+        function clearError() {
+            document.getElementById('error-message').textContent = '';
+        }
+
+        // Main: Handle CSV upload
+        document.getElementById('csvFile').addEventListener('change', function(e) {
+            clearError();
+            const file = e.target.files[0];
+            if (!file) return;
+            if (!file.name.endsWith('.csv')) {
+                showError('Please upload a valid CSV file.');
+                return;
+            }
+            Papa.parse(file, {
+                header: true,
+                skipEmptyLines: true,
+                dynamicTyping: true,
+                complete: function(results) {
+                    try {
+                        if (!results.data || results.data.length === 0) {
+                            showError('CSV file is empty or invalid.');
+                            return;
+                        }
+                        processData(results.data);
+                    } catch (err) {
+                        showError('Error processing data: ' + err.message);
+                    }
+                },
+                error: function(err) {
+                    showError('Error parsing CSV: ' + err.message);
+                }
+            });
+        });
+
+        // Main processing function
+        function processData(data) {
+            // Normalize column names (trim, lower, underscores)
+            const colMap = {};
+            for (const key of Object.keys(data[0])) {
+                colMap[key.trim().toLowerCase().replace(/\s+/g, '_')] = key;
+            }
+            // Helper to get correct column
+            function get(row, col) {
+                return row[colMap[col]];
+            }
+
+            // Filter for USA only
+            const usaData = data.filter(row => {
+                const loc = get(row, 'location_name');
+                return loc && loc.trim().toLowerCase() === 'united states of america';
+            });
+
+            if (usaData.length === 0) {
+                showError('No data found for United States of America.');
+                return;
+            }
+
+            // Get all years available
+            const years = Array.from(new Set(usaData.map(row => +get(row, 'year')))).filter(y => !isNaN(y));
+            if (years.length === 0) {
+                showError('No valid year data found.');
+                return;
+            }
+            years.sort((a, b) => a - b);
+            const latestYear = years[years.length - 1];
+            const prev5Year = latestYear - 5;
+
+            // --- CARD 1: Total USA Population (Latest Year) ---
+            const popLatest = usaData.filter(row => +get(row, 'year') === latestYear)
+                .reduce((sum, row) => sum + (+get(row, 'population') || 0), 0);
+
+            document.getElementById('total-population').textContent = formatNumber(popLatest);
+
+            // --- CARD 2: Total Deaths in USA (Latest Year) ---
+            const deathsLatest = usaData.filter(row => +get(row, 'year') === latestYear)
+                .reduce((sum, row) => sum + (+get(row, 'deaths') || 0), 0);
+
+            document.getElementById('total-deaths').textContent = formatNumber(deathsLatest);
+
+            // --- CARD 3: Population Growth Rate (USA, Last 5 Years) ---
+            const popPrev5 = usaData.filter(row => +get(row, 'year') === prev5Year)
+                .reduce((sum, row) => sum + (+get(row, 'population') || 0), 0);
+
+            let growthRate = null;
+            if (popPrev5 > 0) {
+                growthRate = ((popLatest - popPrev5) / popPrev5) * 100;
+                document.getElementById('growth-rate').textContent = formatPercent(growthRate, 2);
+            } else {
+                document.getElementById('growth-rate').textContent = '--';
+            }
+
+            // --- CHART 1: USA Population Over Time (Line) ---
+            const popByYear = {};
+            for (const y of years) popByYear[y] = 0;
+            usaData.forEach(row => {
+                const y = +get(row, 'year');
+                if (!isNaN(y) && popByYear.hasOwnProperty(y)) {
+                    popByYear[y] += (+get(row, 'population') || 0);
+                }
+            });
+            const lineLabels = years;
+            const lineData = years.map(y => popByYear[y]);
+
+            renderPopulationLineChart(lineLabels, lineData);
+
+            // --- CHART 2: USA Death Rate by Age Group (Bar, Latest Year) ---
+            // Pre-populate all age categories with 0
+            const deathsByAge = {};
+            AGE_CATEGORIES.forEach(age => deathsByAge[age] = 0);
+            usaData.filter(row => +get(row, 'year') === latestYear).forEach(row => {
+                const age = get(row, 'age_name');
+                if (deathsByAge.hasOwnProperty(age)) {
+                    deathsByAge[age] += (+get(row, 'deaths') || 0);
+                }
+            });
+            const barLabels = AGE_CATEGORIES;
+            const barData = AGE_CATEGORIES.map(age => deathsByAge[age]);
+
+            renderDeathBarChart(barLabels, barData);
+
+            // --- CHART 3: USA Deaths by Sex (Pie, Latest Year) ---
+            const deathsBySex = {};
+            SEX_CATEGORIES.forEach(sex => deathsBySex[sex] = 0);
+            usaData.filter(row => +get(row, 'year') === latestYear).forEach(row => {
+                const sex = get(row, 'sex_name');
+                if (deathsBySex.hasOwnProperty(sex)) {
+                    deathsBySex[sex] += (+get(row, 'deaths') || 0);
+                }
+            });
+            const pieLabels = SEX_CATEGORIES;
+            const pieData = SEX_CATEGORIES.map(sex => deathsBySex[sex]);
+
+            renderDeathPieChart(pieLabels, pieData);
+        }
+
+        // --- Chart Rendering Functions ---
+        function renderPopulationLineChart(labels, data) {
+            const ctx = document.getElementById('populationLineChart').getContext('2d');
+            if (populationLineChart) populationLineChart.destroy();
+            populationLineChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Population',
+                        data: data,
+                        borderColor: '#1a237e',
+                        backgroundColor: 'rgba(26,35,126,0.07)',
+                        pointBackgroundColor: '#3949ab',
+                        pointBorderColor: '#1a237e',
+                        tension: 0.25,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: ctx => ' ' + formatNumber(ctx.parsed.y)
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: { display: true, text: 'Year', color: '#1a237e', font: { weight: 'bold' } },
+                            ticks: { color: '#3949ab' }
+                        },
+                        y: {
+                            title: { display: true, text: 'Population', color: '#1a237e', font: { weight: 'bold' } },
+                            ticks: {
+                                color: '#3949ab',
+                                callback: value => formatNumber(value)
+                            },
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderDeathBarChart(labels, data) {
+            const ctx = document.getElementById('deathBarChart').getContext('2d');
+            if (deathBarChart) deathBarChart.destroy();
+            deathBarChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Deaths',
+                        data: data,
+                        backgroundColor: '#3949ab',
+                        borderRadius: 6,
+                        maxBarThickness: 28
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: ctx => ' ' + formatNumber(ctx.parsed.y)
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: { display: true, text: 'Age Group', color: '#1a237e', font: { weight: 'bold' } },
+                            ticks: {
+                                color: '#3949ab',
+                                font: { size: 11 },
+                                autoSkip: false,
+                                maxRotation: 90,
+                                minRotation: 45
+                            }
+                        },
+                        y: {
+                            title: { display: true, text: 'Deaths', color: '#1a237e', font: { weight: 'bold' } },
+                            ticks: {
+                                color: '#3949ab',
+                                callback: value => formatNumber(value)
+                            },
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderDeathPieChart(labels, data) {
+            const ctx = document.getElementById('deathPieChart').getContext('2d');
+            if (deathPieChart) deathPieChart.destroy();
+            deathPieChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: [
+                            'rgba(26,35,126,0.85)',
+                            'rgba(57,73,171,0.85)'
+                        ],
+                        borderColor: '#fff',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'bottom',
+                            labels: {
+                                color: '#1a237e',
+                                font: { weight: 'bold' }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(ctx) {
+                                    const val = ctx.parsed;
+                                    const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                                    const pct = total > 0 ? (val / total * 100).toFixed(1) : '0.0';
+                                    return ` ${ctx.label}: ${formatNumber(val)} (${pct}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>

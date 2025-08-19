@@ -1,0 +1,117 @@
+{
+  "title": "USA Population Growth and Death Rates Dashboard",
+  "description": "This dashboard provides insights into the population growth and death rates in the United States of America, with breakdowns by year, age group, and sex. It highlights key metrics and visualizes trends and distributions to support demographic and public health analysis.",
+  "cards": [
+    {
+      "title": "Total USA Population (Latest Year)",
+      "value_expression": "df[(df['location_name'] == 'United States of America') & (df['year'] == df['year'].max())]['population'].sum()",
+      "card_type": "metric",
+      "description": "Sum of the population across all age and sex groups in the USA for the most recent year available.",
+      "format_hint": "{:,.0f}",
+      "columns_used": [
+        "location_name",
+        "year",
+        "population"
+      ]
+    },
+    {
+      "title": "Total Deaths in USA (Latest Year)",
+      "value_expression": "df[(df['location_name'] == 'United States of America') & (df['year'] == df['year'].max())]['deaths'].sum()",
+      "card_type": "metric",
+      "description": "Total number of deaths in the USA for the most recent year, summed across all age and sex groups.",
+      "format_hint": "{:,.0f}",
+      "columns_used": [
+        "location_name",
+        "year",
+        "deaths"
+      ]
+    },
+    {
+      "title": "Population Growth Rate (USA, Last 5 Years)",
+      "value_expression": "((df[(df['location_name'] == 'United States of America') & (df['year'] == df['year'].max())]['population'].sum() - df[(df['location_name'] == 'United States of America') & (df['year'] == df['year'].max()-5)]['population'].sum()) / df[(df['location_name'] == 'United States of America') & (df['year'] == df['year'].max()-5)]['population'].sum()) * 100",
+      "card_type": "percentage",
+      "description": "Percentage growth in total USA population over the last 5 years.",
+      "format_hint": "{:.2f}%",
+      "columns_used": [
+        "location_name",
+        "year",
+        "population"
+      ]
+    }
+  ],
+  "charts": [
+    {
+      "title": "USA Population Over Time",
+      "chart_type": "line",
+      "x_axis": "year",
+      "y_axis": "population",
+      "aggregation": "sum",
+      "group_by": null,
+      "description": "Shows the trend of total population in the USA over the years.",
+      "columns_used": [
+        "location_name",
+        "year",
+        "population"
+      ],
+      "categories": null
+    },
+    {
+      "title": "USA Death Rate by Age Group (Latest Year)",
+      "chart_type": "bar",
+      "x_axis": "age_name",
+      "y_axis": "deaths",
+      "aggregation": "sum",
+      "group_by": "age_name",
+      "description": "Displays the total number of deaths by age group in the USA for the most recent year.",
+      "columns_used": [
+        "location_name",
+        "year",
+        "age_name",
+        "deaths"
+      ],
+      "categories": [
+        "95+ years",
+        "12-23 months",
+        "5-9 years",
+        "10-14 years",
+        "15-19 years",
+        "20-24 years",
+        "25-29 years",
+        "30-34 years",
+        "35-39 years",
+        "40-44 years",
+        "45-49 years",
+        "50-54 years",
+        "55-59 years",
+        "60-64 years",
+        "65-69 years",
+        "70-74 years",
+        "75-79 years",
+        "<1 year",
+        "80-84 years",
+        "85-89 years",
+        "90-94 years",
+        "2-4 years"
+      ]
+    },
+    {
+      "title": "USA Deaths by Sex (Latest Year)",
+      "chart_type": "pie",
+      "x_axis": "sex_name",
+      "y_axis": "deaths",
+      "aggregation": "sum",
+      "group_by": "sex_name",
+      "description": "Proportion of total deaths in the USA by sex for the most recent year.",
+      "columns_used": [
+        "location_name",
+        "year",
+        "sex_name",
+        "deaths"
+      ],
+      "categories": [
+        "Male",
+        "Female"
+      ]
+    }
+  ]
+}
