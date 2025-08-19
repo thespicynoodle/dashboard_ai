@@ -1,0 +1,542 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Comprehensive Drug-Related Deaths Dashboard by State and Drug Type</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- Bootstrap 5 CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <!-- Papa Parse CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+    <style>
+        body {
+            background: #f8fafc;
+            color: #1a237e;
+            font-family: 'Segoe UI', 'Roboto', Arial, sans-serif;
+        }
+        .dashboard-header {
+            background: linear-gradient(90deg, #1a237e 0%, #3949ab 100%);
+            color: #fff;
+            padding: 2rem 1rem 1rem 1rem;
+            border-radius: 0 0 1.5rem 1.5rem;
+            box-shadow: 0 4px 24px rgba(26,35,126,0.08);
+            margin-bottom: 2rem;
+        }
+        .dashboard-title {
+            font-size: 2.2rem;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+        }
+        .dashboard-desc {
+            font-size: 1.1rem;
+            font-weight: 400;
+            margin-top: 0.5rem;
+            color: #e3e8f3;
+        }
+        .metric-card {
+            background: #fff;
+            border-radius: 1.2rem;
+            box-shadow: 0 2px 16px rgba(26,35,126,0.07);
+            padding: 2rem 1.5rem;
+            margin-bottom: 1.5rem;
+            transition: box-shadow 0.2s;
+            border: none;
+        }
+        .metric-card:hover {
+            box-shadow: 0 6px 32px rgba(26,35,126,0.13);
+        }
+        .metric-title {
+            font-size: 1.05rem;
+            font-weight: 500;
+            color: #3949ab;
+            margin-bottom: 0.5rem;
+        }
+        .metric-value {
+            font-size: 2.1rem;
+            font-weight: 700;
+            color: #1a237e;
+        }
+        .metric-desc {
+            font-size: 0.98rem;
+            color: #5c6bc0;
+            margin-top: 0.3rem;
+        }
+        .upload-section {
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .form-control[type="file"] {
+            background: #fff;
+            border: 1px solid #c5cae9;
+            border-radius: 0.5rem;
+            color: #1a237e;
+        }
+        .chart-card {
+            background: #fff;
+            border-radius: 1.2rem;
+            box-shadow: 0 2px 16px rgba(26,35,126,0.07);
+            padding: 1.5rem 1rem 1.5rem 1rem;
+            margin-bottom: 1.5rem;
+            border: none;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        .chart-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #1a237e;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+        .chart-container {
+            flex: 1 1 auto;
+            min-height: 320px;
+        }
+        .error-message {
+            color: #c62828;
+            font-weight: 500;
+            margin-top: 1rem;
+        }
+        @media (max-width: 991.98px) {
+            .dashboard-header {
+                padding: 1.5rem 0.5rem 1rem 0.5rem;
+            }
+            .metric-card {
+                padding: 1.5rem 1rem;
+            }
+            .chart-card {
+                padding: 1rem 0.5rem 1rem 0.5rem;
+            }
+        }
+        @media (max-width: 767.98px) {
+            .dashboard-title {
+                font-size: 1.3rem;
+            }
+            .metric-value {
+                font-size: 1.5rem;
+            }
+            .chart-title {
+                font-size: 1rem;
+            }
+            .chart-container {
+                min-height: 220px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-header text-center">
+        <div class="dashboard-title">Comprehensive Drug-Related Deaths Dashboard by State and Drug Type</div>
+        <div class="dashboard-desc">
+            This dashboard provides an overview of reported drug-related deaths across Australian states, with breakdowns by drug type and age group. It highlights key metrics and visualizes trends to support public health analysis and policy decisions.
+        </div>
+    </div>
+    <div class="container">
+        <div class="upload-section">
+            <label for="csvFile" class="form-label fw-semibold mb-0" style="color:#1a237e;">Upload CSV Data:</label>
+            <input class="form-control" type="file" id="csvFile" accept=".csv">
+            <span id="fileStatus" class="ms-2 text-secondary"></span>
+        </div>
+        <div id="errorMsg" class="error-message"></div>
+        <div class="row mb-4" id="metricsRow">
+            <div class="col-lg-4 col-md-6 mb-3">
+                <div class="metric-card h-100">
+                    <div class="metric-title">Total Reported Drug-Related Deaths</div>
+                    <div class="metric-value" id="totalDeaths">--</div>
+                    <div class="metric-desc">Sum of all reported drug-related deaths across all states, years, and drug types.</div>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-6 mb-3">
+                <div class="metric-card h-100">
+                    <div class="metric-title">State with Highest Deaths</div>
+                    <div class="metric-value" id="stateHighest">--</div>
+                    <div class="metric-desc">The state with the highest total number of reported drug-related deaths.</div>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-12 mb-3">
+                <div class="metric-card h-100">
+                    <div class="metric-title">Most Prevalent Drug Type</div>
+                    <div class="metric-value" id="drugHighest">--</div>
+                    <div class="metric-desc">The drug type associated with the highest number of reported deaths.</div>
+                </div>
+            </div>
+        </div>
+        <div class="row" id="chartsRow">
+            <div class="col-lg-4 col-md-12 mb-4">
+                <div class="chart-card h-100">
+                    <div class="chart-title">Reported Deaths by State and Drug Type</div>
+                    <div class="chart-container">
+                        <canvas id="barChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-12 mb-4">
+                <div class="chart-card h-100">
+                    <div class="chart-title">Trends in Drug-Related Deaths Over Years</div>
+                    <div class="chart-container">
+                        <canvas id="lineChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-12 mb-4">
+                <div class="chart-card h-100">
+                    <div class="chart-title">Drug-Related Deaths by Age Group</div>
+                    <div class="chart-container">
+                        <canvas id="pieChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        // --- Dashboard Color Palette ---
+        const navy = '#1a237e';
+        const navyLight = '#3949ab';
+        const navyLighter = '#5c6bc0';
+        const white = '#fff';
+        const chartColors = [
+            '#1a237e', '#3949ab', '#5c6bc0', '#90caf9', '#1976d2', '#b39ddb', '#c5cae9', '#283593'
+        ];
+        // --- Chart.js Instances ---
+        let barChartInstance = null;
+        let lineChartInstance = null;
+        let pieChartInstance = null;
+
+        // --- Predefined Categories ---
+        const STATE_CATEGORIES = ['VIC', 'NSW', 'QLD', 'WA'];
+        const DRUG_TYPE_CATEGORIES = ['Opioids', 'Stimulants', 'Benzodiazepines'];
+        const AGE_GROUP_CATEGORIES = ['26-40', '41-60', '18-25', '60+'];
+
+        // --- Utility Functions ---
+        function showError(msg) {
+            document.getElementById('errorMsg').textContent = msg;
+        }
+        function clearError() {
+            document.getElementById('errorMsg').textContent = '';
+        }
+        function formatNumber(num) {
+            return num.toLocaleString('en-AU');
+        }
+        function safeGet(obj, key, fallback='--') {
+            return (obj && obj[key] !== undefined && obj[key] !== null) ? obj[key] : fallback;
+        }
+
+        // --- Main Data Processing ---
+        document.getElementById('csvFile').addEventListener('change', function(e) {
+            clearError();
+            document.getElementById('fileStatus').textContent = '';
+            const file = e.target.files[0];
+            if (!file) return;
+            if (!file.name.endsWith('.csv')) {
+                showError('Please upload a valid CSV file.');
+                return;
+            }
+            document.getElementById('fileStatus').textContent = 'Loading...';
+            Papa.parse(file, {
+                header: true,
+                skipEmptyLines: true,
+                complete: function(results) {
+                    document.getElementById('fileStatus').textContent = '';
+                    if (results.errors && results.errors.length > 0) {
+                        showError('Error parsing CSV: ' + results.errors[0].message);
+                        return;
+                    }
+                    try {
+                        processData(results.data);
+                    } catch (err) {
+                        showError('Data processing error: ' + err.message);
+                    }
+                },
+                error: function(err) {
+                    showError('File parsing error: ' + err.message);
+                }
+            });
+        });
+
+        function processData(data) {
+            // Validate required columns
+            const requiredCols = ['State', 'Year', 'Drug_Type', 'Age_Group', 'Reported_Deaths'];
+            for (const col of requiredCols) {
+                if (!data[0] || !(col in data[0])) {
+                    throw new Error(`Missing required column: ${col}`);
+                }
+            }
+            // Parse and clean data
+            const cleaned = data.map(row => ({
+                State: (row.State || '').trim(),
+                Year: (row.Year || '').trim(),
+                Drug_Type: (row.Drug_Type || '').trim(),
+                Age_Group: (row.Age_Group || '').trim(),
+                Reported_Deaths: Number(row.Reported_Deaths) || 0
+            }));
+
+            // --- Metric 1: Total Reported Deaths ---
+            const totalDeaths = cleaned.reduce((sum, r) => sum + r.Reported_Deaths, 0);
+            document.getElementById('totalDeaths').textContent = formatNumber(totalDeaths);
+
+            // --- Metric 2: State with Highest Deaths ---
+            const stateTotals = {};
+            cleaned.forEach(r => {
+                if (!stateTotals[r.State]) stateTotals[r.State] = 0;
+                stateTotals[r.State] += r.Reported_Deaths;
+            });
+            let stateHighest = '--';
+            let stateHighestVal = -1;
+            for (const s in stateTotals) {
+                if (stateTotals[s] > stateHighestVal) {
+                    stateHighest = s;
+                    stateHighestVal = stateTotals[s];
+                }
+            }
+            document.getElementById('stateHighest').textContent = stateHighest !== '--' ? stateHighest : '--';
+
+            // --- Metric 3: Most Prevalent Drug Type ---
+            const drugTotals = {};
+            cleaned.forEach(r => {
+                if (!drugTotals[r.Drug_Type]) drugTotals[r.Drug_Type] = 0;
+                drugTotals[r.Drug_Type] += r.Reported_Deaths;
+            });
+            let drugHighest = '--';
+            let drugHighestVal = -1;
+            for (const d in drugTotals) {
+                if (drugTotals[d] > drugHighestVal) {
+                    drugHighest = d;
+                    drugHighestVal = drugTotals[d];
+                }
+            }
+            document.getElementById('drugHighest').textContent = drugHighest !== '--' ? drugHighest : '--';
+
+            // --- Chart 1: Bar Chart (State x Drug Type) ---
+            // Prepare data: For each State (in order), for each Drug_Type, sum deaths
+            const drugTypes = Array.from(new Set(cleaned.map(r => r.Drug_Type))).sort();
+            // Always include at least the three main types for the line chart
+            const allDrugTypes = Array.from(new Set([...drugTypes, ...DRUG_TYPE_CATEGORIES]));
+            // For bar chart, show all states in order, each as a group, with bars for each drug type
+            const barData = {};
+            STATE_CATEGORIES.forEach(state => {
+                barData[state] = {};
+                allDrugTypes.forEach(drug => {
+                    barData[state][drug] = 0;
+                });
+            });
+            cleaned.forEach(r => {
+                if (STATE_CATEGORIES.includes(r.State) && allDrugTypes.includes(r.Drug_Type)) {
+                    barData[r.State][r.Drug_Type] += r.Reported_Deaths;
+                }
+            });
+            // Prepare datasets for Chart.js
+            const barDatasets = allDrugTypes.map((drug, idx) => ({
+                label: drug,
+                data: STATE_CATEGORIES.map(state => barData[state][drug]),
+                backgroundColor: chartColors[idx % chartColors.length],
+                borderRadius: 6,
+                maxBarThickness: 32
+            }));
+
+            // --- Chart 2: Line Chart (Year x Drug Type) ---
+            // For each Drug_Type in DRUG_TYPE_CATEGORIES, for each year, sum deaths
+            const years = Array.from(new Set(cleaned.map(r => r.Year))).sort();
+            // Ensure years are sorted numerically if possible
+            years.sort((a, b) => {
+                const na = Number(a), nb = Number(b);
+                if (!isNaN(na) && !isNaN(nb)) return na - nb;
+                return a.localeCompare(b);
+            });
+            const lineData = {};
+            DRUG_TYPE_CATEGORIES.forEach(drug => {
+                lineData[drug] = {};
+                years.forEach(year => {
+                    lineData[drug][year] = 0;
+                });
+            });
+            cleaned.forEach(r => {
+                if (DRUG_TYPE_CATEGORIES.includes(r.Drug_Type) && years.includes(r.Year)) {
+                    lineData[r.Drug_Type][r.Year] += r.Reported_Deaths;
+                }
+            });
+            const lineDatasets = DRUG_TYPE_CATEGORIES.map((drug, idx) => ({
+                label: drug,
+                data: years.map(year => lineData[drug][year]),
+                borderColor: chartColors[idx % chartColors.length],
+                backgroundColor: chartColors[idx % chartColors.length] + '33',
+                tension: 0.3,
+                fill: false,
+                pointRadius: 4,
+                pointHoverRadius: 7,
+                borderWidth: 3
+            }));
+
+            // --- Chart 3: Pie Chart (Age Group) ---
+            // For each Age_Group in AGE_GROUP_CATEGORIES, sum deaths
+            const pieData = {};
+            AGE_GROUP_CATEGORIES.forEach(age => {
+                pieData[age] = 0;
+            });
+            cleaned.forEach(r => {
+                if (AGE_GROUP_CATEGORIES.includes(r.Age_Group)) {
+                    pieData[r.Age_Group] += r.Reported_Deaths;
+                }
+            });
+            const pieValues = AGE_GROUP_CATEGORIES.map(age => pieData[age]);
+
+            // --- Render Charts ---
+            renderBarChart(STATE_CATEGORIES, barDatasets);
+            renderLineChart(years, lineDatasets);
+            renderPieChart(AGE_GROUP_CATEGORIES, pieValues);
+        }
+
+        // --- Chart Rendering Functions ---
+        function renderBarChart(labels, datasets) {
+            const ctx = document.getElementById('barChart').getContext('2d');
+            if (barChartInstance) barChartInstance.destroy();
+            barChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                color: navy,
+                                font: { weight: 'bold' }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: ${formatNumber(context.parsed.y)}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: { display: true, text: 'State', color: navyLighter, font: { weight: 'bold' } },
+                            ticks: { color: navy }
+                        },
+                        y: {
+                            title: { display: true, text: 'Reported Deaths', color: navyLighter, font: { weight: 'bold' } },
+                            beginAtZero: true,
+                            ticks: { color: navy }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderLineChart(labels, datasets) {
+            const ctx = document.getElementById('lineChart').getContext('2d');
+            if (lineChartInstance) lineChartInstance.destroy();
+            lineChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                color: navy,
+                                font: { weight: 'bold' }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: ${formatNumber(context.parsed.y)}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: { display: true, text: 'Year', color: navyLighter, font: { weight: 'bold' } },
+                            ticks: { color: navy }
+                        },
+                        y: {
+                            title: { display: true, text: 'Reported Deaths', color: navyLighter, font: { weight: 'bold' } },
+                            beginAtZero: true,
+                            ticks: { color: navy }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderPieChart(labels, data) {
+            const ctx = document.getElementById('pieChart').getContext('2d');
+            if (pieChartInstance) pieChartInstance.destroy();
+            pieChartInstance = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: chartColors.slice(0, labels.length),
+                        borderColor: white,
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: {
+                                color: navy,
+                                font: { weight: 'bold' }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.parsed || 0;
+                                    return `${label}: ${formatNumber(value)}`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // --- Initial Chart Placeholders (empty) ---
+        window.addEventListener('DOMContentLoaded', function() {
+            // Render empty charts with zero data and correct labels
+            renderBarChart(STATE_CATEGORIES, [{
+                label: 'No Data',
+                data: STATE_CATEGORIES.map(() => 0),
+                backgroundColor: chartColors[0],
+                borderRadius: 6,
+                maxBarThickness: 32
+            }]);
+            renderLineChart(['Year'], [{
+                label: 'No Data',
+                data: [0],
+                borderColor: chartColors[0],
+                backgroundColor: chartColors[0] + '33',
+                tension: 0.3,
+                fill: false,
+                pointRadius: 4,
+                pointHoverRadius: 7,
+                borderWidth: 3
+            }]);
+            renderPieChart(AGE_GROUP_CATEGORIES, AGE_GROUP_CATEGORIES.map(() => 0));
+        });
+    </script>
+</body>
+</html>

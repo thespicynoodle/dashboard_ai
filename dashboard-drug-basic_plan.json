@@ -1,0 +1,98 @@
+{
+  "title": "Comprehensive Drug-Related Deaths Dashboard by State and Drug Type",
+  "description": "This dashboard provides an overview of reported drug-related deaths across Australian states, with breakdowns by drug type and age group. It highlights key metrics and visualizes trends to support public health analysis and policy decisions.",
+  "cards": [
+    {
+      "title": "Total Reported Drug-Related Deaths",
+      "value_expression": "df[\"Reported_Deaths\"].sum()",
+      "card_type": "metric",
+      "description": "Sum of all reported drug-related deaths across all states, years, and drug types.",
+      "format_hint": "{:,}",
+      "columns_used": [
+        "Reported_Deaths"
+      ]
+    },
+    {
+      "title": "State with Highest Deaths",
+      "value_expression": "df.groupby(\"State\")[\"Reported_Deaths\"].sum().idxmax()",
+      "card_type": "kpi",
+      "description": "The state with the highest total number of reported drug-related deaths.",
+      "format_hint": "{}",
+      "columns_used": [
+        "State",
+        "Reported_Deaths"
+      ]
+    },
+    {
+      "title": "Most Prevalent Drug Type",
+      "value_expression": "df.groupby(\"Drug_Type\")[\"Reported_Deaths\"].sum().idxmax()",
+      "card_type": "kpi",
+      "description": "The drug type associated with the highest number of reported deaths.",
+      "format_hint": "{}",
+      "columns_used": [
+        "Drug_Type",
+        "Reported_Deaths"
+      ]
+    }
+  ],
+  "charts": [
+    {
+      "title": "Reported Deaths by State and Drug Type",
+      "chart_type": "bar",
+      "x_axis": "State",
+      "y_axis": "Reported_Deaths",
+      "aggregation": "sum",
+      "group_by": "Drug_Type",
+      "description": "Compares the total number of reported drug-related deaths across states, broken down by drug type.",
+      "columns_used": [
+        "State",
+        "Drug_Type",
+        "Reported_Deaths"
+      ],
+      "categories": [
+        "VIC",
+        "NSW",
+        "QLD",
+        "WA"
+      ]
+    },
+    {
+      "title": "Trends in Drug-Related Deaths Over Years",
+      "chart_type": "line",
+      "x_axis": "Year",
+      "y_axis": "Reported_Deaths",
+      "aggregation": "sum",
+      "group_by": "Drug_Type",
+      "description": "Shows the trend of reported drug-related deaths over the years for each drug type.",
+      "columns_used": [
+        "Year",
+        "Drug_Type",
+        "Reported_Deaths"
+      ],
+      "categories": [
+        "Opioids",
+        "Stimulants",
+        "Benzodiazepines"
+      ]
+    },
+    {
+      "title": "Drug-Related Deaths by Age Group",
+      "chart_type": "pie",
+      "x_axis": "Age_Group",
+      "y_axis": "Reported_Deaths",
+      "aggregation": "sum",
+      "group_by": null,
+      "description": "Distribution of reported drug-related deaths across different age groups.",
+      "columns_used": [
+        "Age_Group",
+        "Reported_Deaths"
+      ],
+      "categories": [
+        "26-40",
+        "41-60",
+        "18-25",
+        "60+"
+      ]
+    }
+  ]
+}

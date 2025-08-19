@@ -1,0 +1,454 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Simple Sales Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <!-- Papa Parse -->
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+    <style>
+        body {
+            background: #f8fafc;
+            color: #1a237e;
+            min-height: 100vh;
+        }
+        .dashboard-header {
+            background: linear-gradient(90deg, #1a237e 0%, #283593 100%);
+            color: #fff;
+            padding: 2rem 1rem 1rem 1rem;
+            border-radius: 0 0 1.5rem 1.5rem;
+            box-shadow: 0 4px 24px rgba(26,35,126,0.08);
+        }
+        .dashboard-title {
+            font-weight: 700;
+            font-size: 2.2rem;
+            letter-spacing: 0.02em;
+        }
+        .dashboard-desc {
+            font-size: 1.1rem;
+            color: #c5cae9;
+            margin-bottom: 0.5rem;
+        }
+        .upload-label {
+            font-weight: 500;
+            color: #1a237e;
+        }
+        .metric-card {
+            background: #fff;
+            border: none;
+            border-radius: 1rem;
+            box-shadow: 0 2px 16px rgba(26,35,126,0.07);
+            padding: 1.5rem 1.2rem;
+            margin-bottom: 1.5rem;
+            transition: box-shadow 0.2s;
+        }
+        .metric-card:hover {
+            box-shadow: 0 6px 32px rgba(26,35,126,0.13);
+        }
+        .metric-title {
+            font-size: 1.05rem;
+            color: #3949ab;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        .metric-value {
+            font-size: 2.1rem;
+            font-weight: 700;
+            color: #1a237e;
+        }
+        .metric-desc {
+            font-size: 0.95rem;
+            color: #7986cb;
+        }
+        .chart-card {
+            background: #fff;
+            border: none;
+            border-radius: 1rem;
+            box-shadow: 0 2px 16px rgba(26,35,126,0.07);
+            padding: 1.2rem 1rem 1.5rem 1rem;
+            margin-bottom: 1.5rem;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        .chart-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #1a237e;
+            margin-bottom: 0.7rem;
+            text-align: center;
+        }
+        .file-upload {
+            margin: 1.5rem 0 0.5rem 0;
+        }
+        .error-message {
+            color: #c62828;
+            font-weight: 500;
+            margin-top: 0.5rem;
+        }
+        @media (max-width: 991.98px) {
+            .chart-row .col-lg-4 {
+                margin-bottom: 1.5rem;
+            }
+        }
+        @media (max-width: 767.98px) {
+            .dashboard-header {
+                padding: 1.2rem 0.5rem 0.8rem 0.5rem;
+            }
+            .dashboard-title {
+                font-size: 1.5rem;
+            }
+            .metric-value {
+                font-size: 1.4rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-header text-center mb-4">
+        <div class="dashboard-title">Simple Sales Dashboard</div>
+        <div class="dashboard-desc">A concise dashboard providing an overview of sales performance, product categories, and customer satisfaction across regions.</div>
+    </div>
+    <div class="container">
+        <div class="file-upload text-center">
+            <label for="csvFile" class="upload-label mb-2">Upload <strong>sample_sales_data.csv</strong> to view dashboard:</label>
+            <input type="file" class="form-control w-auto d-inline-block" id="csvFile" accept=".csv">
+            <div id="errorMsg" class="error-message"></div>
+        </div>
+        <!-- Metric Cards -->
+        <div class="row mt-4 mb-2 g-4">
+            <div class="col-md-4">
+                <div class="metric-card text-center h-100">
+                    <div class="metric-title">Total Sales Amount</div>
+                    <div class="metric-value" id="totalSalesAmount">--</div>
+                    <div class="metric-desc">Sum of all sales transactions in the dataset.</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="metric-card text-center h-100">
+                    <div class="metric-title">Total Quantity Sold</div>
+                    <div class="metric-value" id="totalQuantitySold">--</div>
+                    <div class="metric-desc">Total number of items sold across all products.</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="metric-card text-center h-100">
+                    <div class="metric-title">Average Customer Rating</div>
+                    <div class="metric-value" id="avgCustomerRating">--</div>
+                    <div class="metric-desc">Average customer rating for all sales.</div>
+                </div>
+            </div>
+        </div>
+        <!-- Charts Row -->
+        <div class="row chart-row g-4">
+            <div class="col-lg-4">
+                <div class="chart-card h-100">
+                    <div class="chart-title">Sales Amount by Category</div>
+                    <canvas id="categorySalesChart" height="220"></canvas>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="chart-card h-100">
+                    <div class="chart-title">Quantity Sold by Region</div>
+                    <canvas id="regionQuantityChart" height="220"></canvas>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="chart-card h-100">
+                    <div class="chart-title">Average Customer Rating Over Time</div>
+                    <canvas id="ratingOverTimeChart" height="220"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        // Chart.js color palette
+        const navy = '#1a237e';
+        const navyLight = '#3949ab';
+        const navyLighter = '#7986cb';
+        const navyGradient = (ctx) => {
+            const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+            gradient.addColorStop(0, '#1a237e');
+            gradient.addColorStop(1, '#3949ab');
+            return gradient;
+        };
+        const accentBlue = '#00bcd4';
+        const accentGreen = '#43a047';
+        const accentYellow = '#fbc02d';
+
+        // Predefined categories/regions/dates
+        const CATEGORY_LABELS = ['Electronics', 'Accessories', 'Tools', 'Gadgets'];
+        const REGION_LABELS = ['North', 'South', 'East', 'West', 'Central'];
+        const DATE_LABELS = ['2024-01-15', '2024-01-16', '2024-01-17', '2024-01-18', '2024-01-19'];
+
+        // Chart instances
+        let categorySalesChart, regionQuantityChart, ratingOverTimeChart;
+
+        // Utility: Format numbers as currency
+        function formatCurrency(num) {
+            if (isNaN(num)) return '--';
+            return '$' + num.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        }
+        // Utility: Format numbers as integer
+        function formatInt(num) {
+            if (isNaN(num)) return '--';
+            return num.toLocaleString();
+        }
+        // Utility: Format numbers as rating
+        function formatRating(num) {
+            if (isNaN(num)) return '--';
+            return num.toFixed(2) + ' / 5';
+        }
+
+        // Error display
+        function showError(msg) {
+            document.getElementById('errorMsg').textContent = msg;
+        }
+        function clearError() {
+            document.getElementById('errorMsg').textContent = '';
+        }
+
+        // Main CSV handler
+        document.getElementById('csvFile').addEventListener('change', function(e) {
+            clearError();
+            const file = e.target.files[0];
+            if (!file) return;
+            if (!file.name.endsWith('.csv')) {
+                showError('Please upload a valid CSV file.');
+                return;
+            }
+            Papa.parse(file, {
+                header: true,
+                skipEmptyLines: true,
+                complete: function(results) {
+                    if (results.errors.length > 0) {
+                        showError('Error parsing CSV: ' + results.errors[0].message);
+                        return;
+                    }
+                    try {
+                        processData(results.data);
+                    } catch (err) {
+                        showError('Data processing error: ' + err.message);
+                    }
+                },
+                error: function(err) {
+                    showError('File parsing error: ' + err.message);
+                }
+            });
+        });
+
+        function processData(data) {
+            // Defensive: check required columns
+            const requiredCols = ['sales_amount', 'quantity', 'customer_rating', 'category', 'region', 'sale_date'];
+            for (const col of requiredCols) {
+                if (!Object.keys(data[0] || {}).includes(col)) {
+                    showError(`Missing required column: "${col}"`);
+                    return;
+                }
+            }
+
+            // Parse and clean data
+            const cleaned = data.map(row => ({
+                sales_amount: parseFloat(row.sales_amount) || 0,
+                quantity: parseInt(row.quantity) || 0,
+                customer_rating: parseFloat(row.customer_rating) || 0,
+                category: (row.category || '').trim(),
+                region: (row.region || '').trim(),
+                sale_date: (row.sale_date || '').trim()
+            }));
+
+            // --- Metric Cards ---
+            // Total Sales Amount
+            const totalSales = cleaned.reduce((sum, r) => sum + r.sales_amount, 0);
+            document.getElementById('totalSalesAmount').textContent = formatCurrency(totalSales);
+
+            // Total Quantity Sold
+            const totalQty = cleaned.reduce((sum, r) => sum + r.quantity, 0);
+            document.getElementById('totalQuantitySold').textContent = formatInt(totalQty);
+
+            // Average Customer Rating
+            const ratings = cleaned.map(r => r.customer_rating).filter(r => r > 0);
+            const avgRating = ratings.length ? ratings.reduce((sum, r) => sum + r, 0) / ratings.length : 0;
+            document.getElementById('avgCustomerRating').textContent = formatRating(avgRating);
+
+            // --- Chart 1: Sales Amount by Category ---
+            const categorySales = {};
+            CATEGORY_LABELS.forEach(cat => categorySales[cat] = 0);
+            cleaned.forEach(r => {
+                if (CATEGORY_LABELS.includes(r.category)) {
+                    categorySales[r.category] += r.sales_amount;
+                }
+            });
+            const categorySalesData = CATEGORY_LABELS.map(cat => categorySales[cat]);
+
+            // --- Chart 2: Quantity Sold by Region ---
+            const regionQty = {};
+            REGION_LABELS.forEach(region => regionQty[region] = 0);
+            cleaned.forEach(r => {
+                if (REGION_LABELS.includes(r.region)) {
+                    regionQty[r.region] += r.quantity;
+                }
+            });
+            const regionQtyData = REGION_LABELS.map(region => regionQty[region]);
+
+            // --- Chart 3: Average Customer Rating Over Time ---
+            const dateRatings = {};
+            DATE_LABELS.forEach(date => dateRatings[date] = []);
+            cleaned.forEach(r => {
+                if (DATE_LABELS.includes(r.sale_date) && r.customer_rating > 0) {
+                    dateRatings[r.sale_date].push(r.customer_rating);
+                }
+            });
+            const dateAvgRatings = DATE_LABELS.map(date => {
+                const arr = dateRatings[date];
+                return arr.length ? arr.reduce((sum, v) => sum + v, 0) / arr.length : 0;
+            });
+
+            // Render charts
+            renderCategorySalesChart(categorySalesData);
+            renderRegionQuantityChart(regionQtyData);
+            renderRatingOverTimeChart(dateAvgRatings);
+        }
+
+        // Chart rendering functions
+        function renderCategorySalesChart(data) {
+            const ctx = document.getElementById('categorySalesChart').getContext('2d');
+            if (categorySalesChart) categorySalesChart.destroy();
+            categorySalesChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: CATEGORY_LABELS,
+                    datasets: [{
+                        label: 'Sales Amount',
+                        data: data,
+                        backgroundColor: navyGradient(ctx),
+                        borderRadius: 8,
+                        maxBarThickness: 38
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: ctx => formatCurrency(ctx.parsed.y)
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: navyLight, font: { weight: 600 } }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            ticks: { color: navyLighter, font: { weight: 500 }, callback: v => '$' + v },
+                            grid: { color: '#e3e6f0' }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderRegionQuantityChart(data) {
+            const ctx = document.getElementById('regionQuantityChart').getContext('2d');
+            if (regionQuantityChart) regionQuantityChart.destroy();
+            regionQuantityChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: REGION_LABELS,
+                    datasets: [{
+                        label: 'Quantity Sold',
+                        data: data,
+                        backgroundColor: accentBlue,
+                        borderRadius: 8,
+                        maxBarThickness: 38
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: ctx => formatInt(ctx.parsed.y)
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: navyLight, font: { weight: 600 } }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            ticks: { color: navyLighter, font: { weight: 500 } },
+                            grid: { color: '#e3e6f0' }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderRatingOverTimeChart(data) {
+            const ctx = document.getElementById('ratingOverTimeChart').getContext('2d');
+            if (ratingOverTimeChart) ratingOverTimeChart.destroy();
+            ratingOverTimeChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: DATE_LABELS,
+                    datasets: [{
+                        label: 'Avg. Rating',
+                        data: data,
+                        fill: true,
+                        backgroundColor: function(context) {
+                            const chart = context.chart;
+                            const {ctx, chartArea} = chart;
+                            if (!chartArea) return null;
+                            const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+                            gradient.addColorStop(0, 'rgba(26,35,126,0.18)');
+                            gradient.addColorStop(1, 'rgba(26,35,126,0.01)');
+                            return gradient;
+                        },
+                        borderColor: accentGreen,
+                        borderWidth: 3,
+                        pointBackgroundColor: accentGreen,
+                        pointRadius: 5,
+                        tension: 0.35
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: ctx => formatRating(ctx.parsed.y)
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: navyLight, font: { weight: 600 } }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            min: 0,
+                            max: 5,
+                            ticks: { color: navyLighter, font: { weight: 500 } },
+                            grid: { color: '#e3e6f0' }
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>

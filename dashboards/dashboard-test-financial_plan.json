@@ -1,0 +1,77 @@
+{
+  "title": "Sales Performance Dashboard",
+  "description": "Overview of total revenue, units sold, and customer satisfaction with insights by category, time, and region.",
+  "cards": [
+    {
+      "title": "Total Revenue",
+      "value_expression": "df['sales_amount'].sum()",
+      "card_type": "metric",
+      "description": "Sum of all sales revenue.",
+      "format_hint": "${:,.2f}",
+      "columns_used": [
+        "sales_amount"
+      ]
+    },
+    {
+      "title": "Total Units Sold",
+      "value_expression": "df['quantity'].sum()",
+      "card_type": "count",
+      "description": "Total quantity of items sold.",
+      "format_hint": "{:,.0f}",
+      "columns_used": [
+        "quantity"
+      ]
+    },
+    {
+      "title": "Average Customer Rating",
+      "value_expression": "df['customer_rating'].mean()",
+      "card_type": "kpi",
+      "description": "Average of customer ratings across all orders.",
+      "format_hint": "{:.2f}",
+      "columns_used": [
+        "customer_rating"
+      ]
+    }
+  ],
+  "charts": [
+    {
+      "title": "Revenue by Category",
+      "chart_type": "bar",
+      "x_axis": "category",
+      "y_axis": "sales_amount",
+      "aggregation": "sum",
+      "group_by": "category",
+      "description": "Total revenue by product category to identify top-performing categories.",
+      "columns_used": [
+        "category",
+        "sales_amount"
+      ]
+    },
+    {
+      "title": "Daily Revenue Trend",
+      "chart_type": "line",
+      "x_axis": "sale_date",
+      "y_axis": "sales_amount",
+      "aggregation": "sum",
+      "group_by": "sale_date",
+      "description": "Daily sales revenue trend to observe patterns over time.",
+      "columns_used": [
+        "sale_date",
+        "sales_amount"
+      ]
+    },
+    {
+      "title": "Revenue by Region",
+      "chart_type": "pie",
+      "x_axis": "region",
+      "y_axis": "sales_amount",
+      "aggregation": "sum",
+      "group_by": "region",
+      "description": "Share of total revenue contributed by each region.",
+      "columns_used": [
+        "region",
+        "sales_amount"
+      ]
+    }
+  ]
+}

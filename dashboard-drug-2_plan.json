@@ -1,0 +1,90 @@
+{
+  "title": "USA Drug Deaths Dashboard (1990–2019)",
+  "description": "Focused on drugs_deaths for the United States of America from 1990 to 2019. All visuals should be filtered to location_name == 'United States of America' and years 1990–2019. Time-based charts are ordered from earliest to most recent. Age-based charts should be ordered from youngest to oldest using the dataset’s age_name labels.",
+  "cards": [
+    {
+      "title": "Total Drug Deaths (1990–2019, USA)",
+      "value_expression": "df[(df['location_name']=='United States of America') & (df['year'].between(1990, 2019))]['drugs_deaths'].sum()",
+      "card_type": "metric",
+      "description": "Sum of drug-related deaths across all ages and sexes in the USA, 1990–2019.",
+      "format_hint": "{:,.0f}",
+      "columns_used": [
+        "location_name",
+        "year",
+        "drugs_deaths"
+      ]
+    },
+    {
+      "title": "2019 Drug Deaths (USA)",
+      "value_expression": "df[(df['location_name']=='United States of America') & (df['year']==2019)]['drugs_deaths'].sum()",
+      "card_type": "metric",
+      "description": "Total drug-related deaths in the USA in 2019.",
+      "format_hint": "{:,.0f}",
+      "columns_used": [
+        "location_name",
+        "year",
+        "drugs_deaths"
+      ]
+    },
+    {
+      "title": "Change vs 1990",
+      "value_expression": "((df[(df['location_name']=='United States of America') & (df['year']==2019)]['drugs_deaths'].sum() - df[(df['location_name']=='United States of America') & (df['year']==1990)]['drugs_deaths'].sum()) / df[(df['location_name']=='United States of America') & (df['year']==1990)]['drugs_deaths'].sum()) * 100",
+      "card_type": "percentage",
+      "description": "Percent change in total drug deaths from 1990 to 2019 in the USA.",
+      "format_hint": "{:.1f}%",
+      "columns_used": [
+        "location_name",
+        "year",
+        "drugs_deaths"
+      ]
+    }
+  ],
+  "charts": [
+    {
+      "title": "USA Drug Deaths by Year (1990–2019)",
+      "chart_type": "line",
+      "x_axis": "year",
+      "y_axis": "drugs_deaths",
+      "aggregation": "sum",
+      "group_by": "sex_name",
+      "description": "Trend of total drug deaths in the USA over time, split by sex. Filter to location_name == 'United States of America' and years 1990–2019. Ensure x-axis is sorted ascending by year.",
+      "columns_used": [
+        "location_name",
+        "year",
+        "drugs_deaths",
+        "sex_name"
+      ]
+    },
+    {
+      "title": "Age-Group Trends (1990–2019, USA)",
+      "chart_type": "area",
+      "x_axis": "year",
+      "y_axis": "drugs_deaths",
+      "aggregation": "sum",
+      "group_by": "age_name",
+      "description": "Time trends of drug deaths for each age group in the USA. Filter to location_name == 'United States of America' and years 1990–2019. Order age_name from youngest to oldest (e.g., infants/months, then child years, up to 95+ years).",
+      "columns_used": [
+        "location_name",
+        "year",
+        "drugs_deaths",
+        "age_name"
+      ]
+    },
+    {
+      "title": "2019 Drug Deaths by Age Group (USA)",
+      "chart_type": "bar",
+      "x_axis": "age_name",
+      "y_axis": "drugs_deaths",
+      "aggregation": "sum",
+      "group_by": "sex_name",
+      "description": "Age-wise distribution of drug deaths in 2019 for the USA, split by sex. Filter to location_name == 'United States of America' and year == 2019. Sort bars from youngest to oldest age_name.",
+      "columns_used": [
+        "location_name",
+        "year",
+        "drugs_deaths",
+        "age_name",
+        "sex_name"
+      ]
+    }
+  ]
+}

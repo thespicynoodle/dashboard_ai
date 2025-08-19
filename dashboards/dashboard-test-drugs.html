@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>USA Alcohol and Drug-Related Deaths (1990–2019)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Bootstrap 5 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <!-- PapaParse -->
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+
+  <style>
+    :root{
+      --navy-900: #0b132b;
+      --navy-800: #1c2541;
+      --navy-700: #243b55;
+      --navy-600: #2b4162;
+      --blue-400: #3a86ff;
+      --blue-300: #7aa7ff;
+      --teal-400: #2ec4b6;
+      --pink-400: #e76f51;
+      --purple-400: #a78bfa;
+      --gray-200: #e9ecef;
+      --card-bg: #ffffff;
+      --text-dark: #0f172a;
+      --muted: #6b7280;
+    }
+
+    body{
+      background: linear-gradient(135deg, var(--navy-900), var(--navy-700));
+      color: #f8fafc;
+      font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif;
+    }
+
+    .page-header{
+      background: radial-gradient(1200px 500px at 10% -10%, rgba(58,134,255,.25), transparent),
+                  radial-gradient(1200px 500px at 90% -10%, rgba(46,196,182,.20), transparent);
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+
+    .title{
+      font-weight: 800;
+      letter-spacing: .3px;
+    }
+
+    .subtitle{
+      color: #d0d7e3;
+    }
+
+    .upload-card{
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.12);
+      backdrop-filter: blur(6px);
+      border-radius: 14px;
+    }
+
+    .upload-card input[type=file]{
+      color: #f1f5f9;
+    }
+
+    .card.metric{
+      border: none;
+      background: var(--card-bg);
+      color: var(--text-dark);
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.12);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card.metric .accent{
+      position: absolute;
+      top: 0; left: 0;
+      height: 5px;
+      width: 100%;
+      background: linear-gradient(90deg, var(--blue-400), var(--teal-400));
+    }
+
+    .metric .icon{
+      width: 42px;
+      height: 42px;
+      border-radius: 10px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, rgba(58,134,255,.15), rgba(46,196,182,.12));
+      color: var(--navy-700);
+      margin-right: 10px;
+    }
+
+    .metric .label{
+      color: var(--muted);
+      font-size: .95rem;
+    }
+
+    .metric .value{
+      font-size: 1.8rem;
+      font-weight: 800;
+      letter-spacing: .3px;
+    }
+
+    .metric .sub{
+      color: var(--muted);
+      font-size: .86rem;
+    }
+
+    .chart-card{
+      background: var(--card-bg);
+      color: var(--text-dark);
+      border: none;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.12);
+    }
+
+    .chart-card .card-header{
+      background: transparent;
+      border-bottom: 1px solid var(--gray-200);
+      padding-bottom: .75rem;
+    }
+
+    .chart-container{
+      position: relative;
+      height: 320px;
+    }
+
+    .footer-note{
+      color: #cbd5e1;
+      font-size: .9rem;
+    }
+
+    .badge-filter{
+      background: rgba(255,255,255,.1);
+      border: 1px solid rgba(255,255,255,.25);
+      color: #e2e8f0;
+    }
+
+    .alert-placeholder{
+      position: sticky;
+      top: 10px;
+      z-index: 1000;
+    }
+
+    .spinner{
+      display: none;
+    }
+
+    .file-hint{
+      color: #cbd5e1;
+      font-size: .95rem;
+    }
+
+    @media (max-width: 991px){
+      .chart-container{ height: 260px; }
+    }
+    @media (max-width: 575px){
+      .chart-container{ height: 240px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="page-header py-4 mb-3">
+    <div class="container">
+      <div class="d-flex align-items-start justify-content-between flex-wrap">
+        <div class="pe-3">
+          <h1 class="title h2 mb-2">USA Alcohol and Drug-Related Deaths (1990–2019)</h1>
+          <p class="subtitle mb-0">
+            Focuses on alcohol- and drug-attributable deaths in the United States from 1990 to 2019.
+            All cards and charts are filtered to location_name in ['United States', 'United States of America'] and year between 1990 and 2019.
+          </p>
+        </div>
+        <div class="d-flex align-items-center gap-2 mt-3 mt-md-0">
+          <span class="badge rounded-pill badge-filter">United States</span>
+          <span class="badge rounded-pill badge-filter">1990–2019</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <div id="alert-area" class="alert-placeholder mb-3"></div>
+
+    <!-- Upload -->
+    <div class="upload-card p-3 p-sm-4 mb-4">
+      <div class="d-flex align-items-center gap-3 flex-wrap">
+        <div class="flex-grow-1">
+          <label for="csvFile" class="form-label mb-1">Upload CSV data (updated_names_copy.csv)</label>
+          <input class="form-control form-control-lg bg-transparent" type="file" id="csvFile" accept=".csv" />
+          <div class="file-hint mt-2">
+            Required columns: location_name, year, sex_name, age_name, alc_deaths, drugs_deaths
+          </div>
+        </div>
+        <div class="text-center">
+          <div id="loadingSpinner" class="spinner-border text-light spinner" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Metrics -->
+    <div class="row g-4 mb-4">
+      <div class="col-12 col-md-4">
+        <div class="card metric h-100">
+          <div class="accent"></div>
+          <div class="card-body">
+            <div class="d-flex align-items-center mb-2">
+              <div class="icon"><i class="bi bi-droplet-half"></i></div>
+              <div class="label">Total Alcohol-Related Deaths (1990–2019, USA)</div>
+            </div>
+            <div id="metricAlcohol" class="value">—</div>
+            <div class="sub">Sum of alcohol-attributable deaths in the USA across all ages and sexes from 1990 to 2019.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12 col-md-4">
+        <div class="card metric h-100">
+          <div class="accent"></div>
+          <div class="card-body">
+            <div class="d-flex align-items-center mb-2">
+              <div class="icon"><i class="bi bi-capsule"></i></div>
+              <div class="label">Total Drug-Related Deaths (1990–2019, USA)</div>
+            </div>
+            <div id="metricDrugs" class="value">—</div>
+            <div class="sub">Sum of drug-attributable deaths in the USA across all ages and sexes from 1990 to 2019.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12 col-md-4">
+        <div class="card metric h-100">
+          <div class="accent"></div>
+          <div class="card-body">
+            <div class="d-flex align-items-center mb-2">
+              <div class="icon"><i class="bi bi-pie-chart"></i></div>
+              <div class="label">Alcohol Share of Alcohol + Drug Deaths</div>
+            </div>
+            <div id="metricShare" class="value">—</div>
+            <div class="sub">Percentage of combined alcohol and drug deaths attributable to alcohol in the USA over 1990–2019.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="row g-4">
+      <div class="col-12 col-lg-4">
+        <div class="card chart-card h-100">
+          <div class="card-header">
+            <strong>Annual Alcohol-Related Deaths by Sex (USA, 1990–2019)</strong>
+          </div>
+          <div class="card-body">
+            <div class="chart-container">
+              <canvas id="chartAlcoholBySex"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12 col-lg-4">
+        <div class="card chart-card h-100">
+          <div class="card-header">
+            <strong>Annual Drug-Related Deaths by Sex (USA, 1990–2019)</strong>
+          </div>
+          <div class="card-body">
+            <div class="chart-container">
+              <canvas id="chartDrugsBySex"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12 col-lg-4">
+        <div class="card chart-card h-100">
+          <div class="card-header">
+            <strong>Drug-Related Deaths by Age Group and Sex (USA, 1990–2019)</strong>
+          </div>
+          <div class="card-body">
+            <div class="chart-container">
+              <canvas id="chartDrugsByAgeSex"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p class="footer-note mt-4 mb-5">
+      Notes: Metrics and charts are computed from the uploaded CSV. Data are filtered to location_name in ['United States', 'United States of America'] and years 1990–2019 inclusive.
+    </p>
+  </main>
+
+  <script>
+    // Global Chart instances to enable destroy on reload
+    let chartAlcoholBySex = null;
+    let chartDrugsBySex = null;
+    let chartDrugsByAgeSex = null;
+
+    // Simple alert system
+    function showAlert(message, type='danger', timeout=6000){
+      const area = document.getElementById('alert-area');
+      const el = document.createElement('div');
+      el.className = `alert alert-${type} alert-dismissible fade show`;
+      el.role = 'alert';
+      el.innerHTML = `
+        <strong>${type === 'danger' ? 'Error' : type === 'warning' ? 'Warning' : 'Info'}:</strong> 
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      `;
+      area.appendChild(el);
+      if(timeout){
+        setTimeout(()=>{ 
+          try{ el.classList.remove('show'); setTimeout(()=>el.remove(), 150); }catch(e){}
+        }, timeout);
+      }
+    }
+
+    // Utils
+    const filters = {
+      locations: new Set(['United States','United States of America']),
+      yearMin: 1990,
+      yearMax: 2019
+    };
+
+    const requiredColumns = ['location_name','year','sex_name','age_name','alc_deaths','drugs_deaths'];
+
+    function toNumber(v){
+      if(v === null || v === undefined) return 0;
+      const s = String(v).trim();
+      if(s === '' || s.toLowerCase() === 'na' || s.toLowerCase() === 'nan') return 0;
+      const n = parseFloat(s.replace(/,/g,''));
+      return Number.isFinite(n) ? n : 0;
+    }
+
+    function toYear(v){
+      const n = parseInt(String(v).replace(/[^0-9-]/g,''), 10);
+      return Number.isFinite(n) ? n : null;
+    }
+
+    function formatNumber(n){
+      try{
+        return n.toLocaleString(undefined, {maximumFractionDigits: 0});
+      }catch(e){
+        return String(Math.round(n));
+      }
+    }
+
+    function formatPercent(p){
+      if(!Number.isFinite(p)) return '—';
+      return (p*100).toFixed(1) + '%';
+    }
+
+    function validateColumns(rows){
+      if(!rows || rows.length === 0){
+        throw new Error('The file appears to have no data rows.');
+      }
+      const cols = Object.keys(rows[0] || {});
+      const missing = requiredColumns.filter(c => !cols.includes(c));
+      if(missing.length){
+        throw new Error(`Missing required column(s): ${missing.join(', ')}`);
+      }
+    }
+
+    function filterData(rows){
+      return rows.filter(r => {
+        const loc = (r.location_name || '').trim();
+        const year = toYear(r.year);
+        return filters.locations.has(loc) && year !== null && year >= filters.yearMin && year <= filters.yearMax;
+      }).map(r => ({
+        location_name: r.location_name,
+        year: toYear(r.year),
+        sex_name: (r.sex_name || '').trim() || 'Unknown',
+        age_name: (r.age_name || '').trim() || 'Unknown',
+        alc_deaths: toNumber(r.alc_deaths),
+        drugs_deaths: toNumber(r.drugs_deaths)
+      }));
+    }
+
+    function computeMetrics(data){
+      const totalAlcohol = data.reduce((a,r)=> a + r.alc_deaths, 0);
+      const totalDrugs = data.reduce((a,r)=> a + r.drugs_deaths, 0);
+      const denom = totalAlcohol + totalDrugs;
+      const alcShare = denom > 0 ? (totalAlcohol / denom) : NaN;
+      return { totalAlcohol, totalDrugs, alcShare };
+    }
+
+    function uniqueSortedYears(data){
+      const years = Array.from(new Set(data.map(d => d.year))).sort((a,b)=>a-b);
+      const full = [];
+      for(let y=filters.yearMin; y<=filters.yearMax; y++){ full.push(y); }
+      // Ensure full coverage across requested range
+      return full.filter(y => years.includes(y) || years.length > 0);
+    }
+
+    function orderedSexes(uniqueSexes){
+      const pref = ['Female','Male','Both','Unknown'];
+      const rest = uniqueSexes.filter(s => !pref.includes(s)).sort();
+      return pref.filter(s => uniqueSexes.includes(s)).concat(rest);
+    }
+
+    function colorForSex(sex){
+      const map = {
+        'Male': { bg:'rgba(58,134,255,0.3)', border:'rgba(58,134,255,1)' },
+        'Female': { bg:'rgba(231,111,81,0.3)', border:'rgba(231,111,81,1)' },
+        'Both': { bg:'rgba(46,196,182,0.3)', border:'rgba(46,196,182,1)' },
+        'Unknown': { bg:'rgba(167,139,250,0.3)', border:'rgba(167,139,250,1)' }
+      };
+      return map[sex] || { bg:'rgba(36,59,85,0.25)', border:'rgba(36,59,85,1)' };
+    }
+
+    function lineDatasetsBySex(data, valueKey, years){
+      const sexes = orderedSexes(Array.from(new Set(data.map(d => d.sex_name))));
+      return sexes.map(sex => {
+        const { bg, border } = colorForSex(sex);
+        const values = years.map(y => {
+          return data
+            .filter(d => d.sex_name === sex && d.year === y)
+            .reduce((a, r) => a + (toNumber(r[valueKey]) || 0), 0);
+        });
+        return {
+          label: sex,
+          data: values,
+          fill: false,
+          borderColor: border,
+          backgroundColor: bg,
+          tension: 0.25,
+          pointRadius: 2.5,
+          pointHoverRadius: 4,
+          borderWidth: 2
+        };
+      });
+    }
+
+    function sortAgeLabels(labels){
+      // Try to sort ages numerically by their leading number. Keep "All Ages" at end.
+      const specialEnd = ['All Ages', 'Overall', 'Total'];
+      const end = labels.filter(l => specialEnd.includes(l));
+      const normal = labels.filter(l => !specialEnd.includes(l));
+      normal.sort((a,b) => {
+        const getStart = s => {
+          const m = String(s).match(/^(\d+)|(^Under\s*(\d+))/i);
+          if(m){
+            return parseInt(m[1] || m[3], 10);
+          }
+          if(/^<\s*\d+/.test(s)){
+            return parseInt(s.replace(/[^\d]/g,''),10);
+          }
+          return Number.MAX_SAFE_INTEGER - 1; // push unknown to near end
+        };
+        const sa = getStart(a), sb = getStart(b);
+        if(sa !== sb) return sa - sb;
+        return String(a).localeCompare(String(b));
+      });
+      return normal.concat(end);
+    }
+
+    function groupedBarByAgeSex(data, valueKey){
+      const sexes = orderedSexes(Array.from(new Set(data.map(d => d.sex_name))));
+      const ages = sortAgeLabels(Array.from(new Set(data.map(d => d.age_name))));
+      const datasets = sexes.map(sex => {
+        const { bg, border } = colorForSex(sex);
+        const vals = ages.map(age => {
+          return data
+            .filter(d => d.sex_name === sex && d.age_name === age)
+            .reduce((a, r) => a + (toNumber(r[valueKey]) || 0), 0);
+        });
+        return {
+          label: sex,
+          data: vals,
+          backgroundColor: border,
+          borderColor: border,
+          borderWidth: 1,
+          borderRadius: 6
+        };
+      });
+      return { labels: ages, datasets };
+    }
+
+    function destroyCharts(){
+      [chartAlcoholBySex, chartDrugsBySex, chartDrugsByAgeSex].forEach(ch => { if(ch){ try{ ch.destroy(); }catch(e){} }});
+      chartAlcoholBySex = chartDrugsBySex = chartDrugsByAgeSex = null;
+    }
+
+    function renderAll(data){
+      // Metrics
+      const { totalAlcohol, totalDrugs, alcShare } = computeMetrics(data);
+      document.getElementById('metricAlcohol').textContent = formatNumber(totalAlcohol);
+      document.getElementById('metricDrugs').textContent = formatNumber(totalDrugs);
+      document.getElementById('metricShare').textContent = formatPercent(alcShare);
+
+      // Charts
+      destroyCharts();
+
+      const years = uniqueSortedYears(data);
+
+      // 1) Annual Alcohol by Sex (line)
+      const ctx1 = document.getElementById('chartAlcoholBySex').getContext('2d');
+      chartAlcoholBySex = new Chart(ctx1, {
+        type: 'line',
+        data: {
+          labels: years,
+          datasets: lineDatasetsBySex(data, 'alc_deaths', years)
+        },
+        options: baseLineOptions('Deaths')
+      });
+
+      // 2) Annual Drugs by Sex (line)
+      const ctx2 = document.getElementById('chartDrugsBySex').getContext('2d');
+      chartDrugsBySex = new Chart(ctx2, {
+        type: 'line',
+        data: {
+          labels: years,
+          datasets: lineDatasetsBySex(data, 'drugs_deaths', years)
+        },
+        options: baseLineOptions('Deaths')
+      });
+
+      // 3) Drugs by Age and Sex (bar), aggregated across 1990–2019
+      const ctx3 = document.getElementById('chartDrugsByAgeSex').getContext('2d');
+      const groupBar = groupedBarByAgeSex(data, 'drugs_deaths');
+      chartDrugsByAgeSex = new Chart(ctx3, {
+        type: 'bar',
+        data: groupBar,
+        options: baseBarOptions('Deaths')
+      });
+    }
+
+    function baseLineOptions(yTitle){
+      return {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: {
+            position: 'top',
+            labels: { usePointStyle: true, pointStyle: 'circle' }
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context){
+                const v = context.parsed.y;
+                return `${context.dataset.label}: ${formatNumber(v)}`;
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: { display: false },
+            title: { display: true, text: 'Year' }
+          },
+          y: {
+            beginAtZero: true,
+            title: { display: true, text: yTitle },
+            grid: { color: 'rgba(0,0,0,0.06)' },
+            ticks: { callback: (v)=>formatNumber(v) }
+          }
+        }
+      };
+    }
+
+    function baseBarOptions(yTitle){
+      return {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'top',
+            labels: { usePointStyle: true, pointStyle: 'rectRounded' }
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context){
+                return `${context.dataset.label}: ${formatNumber(context.parsed.y)}`;
+              }
+            }
+          }
+        },
+        scales: {
+          x: { stacked: false, grid: { display: false }, title: { display: true, text: 'Age Group' } },
+          y: {
+            beginAtZero: true,
+            stacked: false,
+            title: { display: true, text: yTitle },
+            grid: { color: 'rgba(0,0,0,0.06)' },
+            ticks: { callback: (v)=>formatNumber(v) }
+          }
+        }
+      };
+    }
+
+    async function parseCSVFile(file){
+      return new Promise((resolve, reject) => {
+        Papa.parse(file, {
+          header: true,
+          skipEmptyLines: true,
+          dynamicTyping: false,
+          worker: true,
+          error: (err) => reject(err),
+          complete: (results) => {
+            if(results && results.errors && results.errors.length){
+              console.warn('PapaParse errors:', results.errors);
+              // Treat as warning but continue if we still have data
+            }
+            resolve(results.data || []);
+          }
+        });
+      });
+    }
+
+    async function handleFile(file){
+      const spinner = document.getElementById('loadingSpinner');
+      spinner.style.display = 'inline-block';
+
+      try{
+        if(!file){
+          throw new Error('Please choose a CSV file to upload.');
+        }
+        if(!file.name.toLowerCase().endsWith('.csv')){
+          throw new Error('Unsupported file type. Please upload a .csv file.');
+        }
+
+        const rows = await parseCSVFile(file);
+        validateColumns(rows);
+        const filtered = filterData(rows);
+
+        if(filtered.length === 0){
+          showAlert('No rows matched the filter: location_name in [United States, United States of America] and years 1990–2019.', 'warning', 8000);
+        }
+
+        renderAll(filtered);
+        showAlert('Data loaded successfully.', 'success', 3500);
+      }catch(err){
+        console.error(err);
+        showAlert(err.message || 'Failed to parse or render the file.', 'danger', 9000);
+        // Reset UI on failure
+        destroyCharts();
+        document.getElementById('metricAlcohol').textContent = '—';
+        document.getElementById('metricDrugs').textContent = '—';
+        document.getElementById('metricShare').textContent = '—';
+      }finally{
+        spinner.style.display = 'none';
+      }
+    }
+
+    document.getElementById('csvFile').addEventListener('change', (e)=>{
+      const file = e.target.files && e.target.files[0];
+      handleFile(file);
+    });
+
+    // Initialize empty charts (optional) - we'll leave empty until data is uploaded
+  </script>
+  <!-- Bootstrap JS (for alerts dismiss) -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+</body>
+</html>

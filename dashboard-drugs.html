@@ -1,0 +1,499 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Drug-Related Deaths in the USA (1990-2019) Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <!-- Papa Parse -->
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+    <style>
+        body {
+            background: #f8fafc;
+            color: #1a237e;
+            font-family: 'Segoe UI', 'Roboto', Arial, sans-serif;
+        }
+        .dashboard-header {
+            background: linear-gradient(90deg, #1a237e 0%, #3949ab 100%);
+            color: #fff;
+            padding: 2rem 1rem 1rem 1rem;
+            border-radius: 0 0 1.5rem 1.5rem;
+            box-shadow: 0 4px 24px rgba(26,35,126,0.08);
+        }
+        .dashboard-title {
+            font-size: 2.2rem;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+        }
+        .dashboard-desc {
+            font-size: 1.1rem;
+            font-weight: 400;
+            margin-top: 0.5rem;
+            color: #e3e8f3;
+        }
+        .upload-section {
+            margin-top: 2rem;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+        .metric-card {
+            background: #fff;
+            border: none;
+            border-radius: 1rem;
+            box-shadow: 0 2px 16px rgba(26,35,126,0.07);
+            padding: 1.5rem 1.2rem;
+            margin-bottom: 1.5rem;
+            transition: box-shadow 0.2s;
+            min-height: 170px;
+        }
+        .metric-card:hover {
+            box-shadow: 0 6px 32px rgba(26,35,126,0.13);
+        }
+        .metric-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #1a237e;
+            margin-bottom: 0.5rem;
+        }
+        .metric-value {
+            font-size: 2.1rem;
+            font-weight: 700;
+            color: #283593;
+            margin-bottom: 0.3rem;
+        }
+        .metric-desc {
+            font-size: 0.98rem;
+            color: #5c6bc0;
+        }
+        .charts-row {
+            margin-top: 1.5rem;
+        }
+        .chart-card {
+            background: #fff;
+            border: none;
+            border-radius: 1rem;
+            box-shadow: 0 2px 16px rgba(26,35,126,0.07);
+            padding: 1.2rem 1rem 1.5rem 1rem;
+            margin-bottom: 1.5rem;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        .chart-title {
+            font-size: 1.08rem;
+            font-weight: 600;
+            color: #1a237e;
+            margin-bottom: 0.7rem;
+            text-align: center;
+        }
+        .chart-container {
+            flex: 1 1 auto;
+            min-height: 300px;
+        }
+        .file-input-label {
+            font-weight: 600;
+            color: #1a237e;
+            margin-bottom: 0.5rem;
+        }
+        .error-message {
+            color: #c62828;
+            font-weight: 600;
+            margin-top: 1rem;
+            text-align: center;
+        }
+        @media (max-width: 991.98px) {
+            .charts-row .col-lg-4 {
+                margin-bottom: 1.5rem;
+            }
+        }
+        @media (max-width: 767.98px) {
+            .dashboard-header {
+                padding: 1.2rem 0.5rem 0.8rem 0.5rem;
+                border-radius: 0 0 1rem 1rem;
+            }
+            .dashboard-title {
+                font-size: 1.4rem;
+            }
+            .metric-card {
+                min-height: 120px;
+                padding: 1rem 0.7rem;
+            }
+            .chart-title {
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-header text-center shadow-sm mb-4">
+        <div class="dashboard-title">Drug-Related Deaths in the USA (1990-2019) Dashboard</div>
+        <div class="dashboard-desc">
+            This dashboard provides a focused analysis of drug-related deaths in the United States of America from 1990 to 2019. It highlights key metrics and visualizes trends by year, sex, and age group to support public health insights and policy decisions.
+        </div>
+    </div>
+    <div class="container">
+        <div class="upload-section">
+            <label for="csvFileInput" class="file-input-label">Upload CSV Data File (<code>updated_names_copy.csv</code>):</label>
+            <input type="file" id="csvFileInput" accept=".csv" class="form-control w-auto d-inline-block" style="max-width:320px;">
+            <div id="error-message" class="error-message"></div>
+        </div>
+        <div class="row" id="metrics-row">
+            <div class="col-lg-4 col-md-6 mb-3">
+                <div class="metric-card text-center h-100">
+                    <div class="metric-title">Total Drug Deaths (USA, 1990-2019)</div>
+                    <div class="metric-value" id="total-deaths">—</div>
+                    <div class="metric-desc">Total number of drug-related deaths in the USA from 1990 to 2019.</div>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-6 mb-3">
+                <div class="metric-card text-center h-100">
+                    <div class="metric-title">Average Annual Drug Deaths (USA, 1990-2019)</div>
+                    <div class="metric-value" id="avg-annual-deaths">—</div>
+                    <div class="metric-desc">Average number of drug-related deaths per year in the USA over the period 1990-2019.</div>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-12 mb-3">
+                <div class="metric-card text-center h-100">
+                    <div class="metric-title">Peak Year for Drug Deaths (USA, 1990-2019)</div>
+                    <div class="metric-value" id="peak-year">—</div>
+                    <div class="metric-desc">The year with the highest total drug-related deaths in the USA between 1990 and 2019.</div>
+                </div>
+            </div>
+        </div>
+        <div class="row charts-row">
+            <div class="col-lg-4 col-md-12 mb-4">
+                <div class="chart-card h-100">
+                    <div class="chart-title">Drug Deaths Over Time in the USA (1990-2019)</div>
+                    <div class="chart-container">
+                        <canvas id="lineChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="chart-card h-100">
+                    <div class="chart-title">Drug Deaths by Sex in the USA (1990-2019)</div>
+                    <div class="chart-container">
+                        <canvas id="sexBarChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="chart-card h-100">
+                    <div class="chart-title">Drug Deaths by Age Group in the USA (1990-2019)</div>
+                    <div class="chart-container">
+                        <canvas id="ageBarChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+    // --- Dashboard Constants ---
+    const SEX_CATEGORIES = ['Male', 'Female'];
+    const AGE_CATEGORIES = [
+        '95+ years', '12-23 months', '5-9 years', '10-14 years', '15-19 years', '20-24 years', '25-29 years',
+        '30-34 years', '35-39 years', '40-44 years', '45-49 years', '50-54 years', '55-59 years', '60-64 years',
+        '65-69 years', '70-74 years', '75-79 years', '<1 year', '80-84 years', '85-89 years', '90-94 years', '2-4 years'
+    ];
+    const YEARS = Array.from({length: 2019 - 1990 + 1}, (_, i) => 1990 + i);
+
+    // --- Chart.js Chart Instances ---
+    let lineChartInstance = null;
+    let sexBarChartInstance = null;
+    let ageBarChartInstance = null;
+
+    // --- Utility Functions ---
+    function formatNumber(num) {
+        if (num === null || num === undefined || isNaN(num)) return '—';
+        return num.toLocaleString('en-US', {maximumFractionDigits: 0});
+    }
+    function formatFloat(num) {
+        if (num === null || num === undefined || isNaN(num)) return '—';
+        return num.toLocaleString('en-US', {maximumFractionDigits: 0, minimumFractionDigits: 0});
+    }
+
+    function showError(msg) {
+        document.getElementById('error-message').textContent = msg;
+    }
+    function clearError() {
+        document.getElementById('error-message').textContent = '';
+    }
+
+    // --- Data Processing Functions ---
+    function processData(data) {
+        // Filter for USA and years 1990-2019
+        const filtered = data.filter(row =>
+            row['location_name'] === 'United States of America' &&
+            Number(row['year']) >= 1990 &&
+            Number(row['year']) <= 2019 &&
+            row['drugs_deaths'] !== undefined && row['drugs_deaths'] !== ''
+        );
+
+        // Convert numeric fields
+        filtered.forEach(row => {
+            row['year'] = Number(row['year']);
+            row['drugs_deaths'] = Number(row['drugs_deaths']);
+        });
+
+        // --- Metric 1: Total Drug Deaths ---
+        const totalDeaths = filtered.reduce((sum, row) => sum + (isNaN(row['drugs_deaths']) ? 0 : row['drugs_deaths']), 0);
+
+        // --- Metric 2: Average Annual Drug Deaths ---
+        const deathsByYear = {};
+        filtered.forEach(row => {
+            if (!deathsByYear[row['year']]) deathsByYear[row['year']] = 0;
+            deathsByYear[row['year']] += (isNaN(row['drugs_deaths']) ? 0 : row['drugs_deaths']);
+        });
+        const years = Object.keys(deathsByYear);
+        const avgAnnualDeaths = years.length > 0
+            ? Object.values(deathsByYear).reduce((a, b) => a + b, 0) / years.length
+            : 0;
+
+        // --- Metric 3: Peak Year ---
+        let peakYear = '—';
+        if (years.length > 0) {
+            peakYear = Object.entries(deathsByYear).reduce((max, curr) => curr[1] > max[1] ? curr : max, [null, -Infinity])[0];
+        }
+
+        // --- Chart 1: Deaths Over Time ---
+        const deathsOverTime = YEARS.map(year => deathsByYear[year] || 0);
+
+        // --- Chart 2: Deaths by Sex ---
+        const deathsBySex = {};
+        SEX_CATEGORIES.forEach(sex => deathsBySex[sex] = 0);
+        filtered.forEach(row => {
+            const sex = row['sex_name'];
+            if (SEX_CATEGORIES.includes(sex)) {
+                deathsBySex[sex] += (isNaN(row['drugs_deaths']) ? 0 : row['drugs_deaths']);
+            }
+        });
+        const deathsBySexArr = SEX_CATEGORIES.map(sex => deathsBySex[sex] || 0);
+
+        // --- Chart 3: Deaths by Age Group ---
+        const deathsByAge = {};
+        AGE_CATEGORIES.forEach(age => deathsByAge[age] = 0);
+        filtered.forEach(row => {
+            const age = row['age_name'];
+            if (AGE_CATEGORIES.includes(age)) {
+                deathsByAge[age] += (isNaN(row['drugs_deaths']) ? 0 : row['drugs_deaths']);
+            }
+        });
+        const deathsByAgeArr = AGE_CATEGORIES.map(age => deathsByAge[age] || 0);
+
+        return {
+            totalDeaths,
+            avgAnnualDeaths,
+            peakYear,
+            deathsOverTime,
+            deathsBySexArr,
+            deathsByAgeArr
+        };
+    }
+
+    // --- Chart Rendering Functions ---
+    function renderLineChart(data) {
+        const ctx = document.getElementById('lineChart').getContext('2d');
+        if (lineChartInstance) lineChartInstance.destroy();
+        lineChartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: YEARS,
+                datasets: [{
+                    label: 'Drug Deaths',
+                    data: data,
+                    fill: true,
+                    borderColor: '#1a237e',
+                    backgroundColor: 'rgba(26,35,126,0.09)',
+                    pointBackgroundColor: '#3949ab',
+                    pointBorderColor: '#1a237e',
+                    tension: 0.22
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => formatNumber(ctx.parsed.y)
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        title: { display: true, text: 'Year', color: '#1a237e', font: { weight: 600 } },
+                        ticks: { color: '#283593', font: { size: 12 } },
+                        grid: { color: '#e3e8f3' }
+                    },
+                    y: {
+                        title: { display: true, text: 'Drug Deaths', color: '#1a237e', font: { weight: 600 } },
+                        ticks: {
+                            color: '#283593',
+                            font: { size: 12 },
+                            callback: value => formatNumber(value)
+                        },
+                        grid: { color: '#e3e8f3' }
+                    }
+                }
+            }
+        });
+    }
+
+    function renderSexBarChart(data) {
+        const ctx = document.getElementById('sexBarChart').getContext('2d');
+        if (sexBarChartInstance) sexBarChartInstance.destroy();
+        sexBarChartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: SEX_CATEGORIES,
+                datasets: [{
+                    label: 'Drug Deaths',
+                    data: data,
+                    backgroundColor: ['#1a237e', '#3949ab'],
+                    borderRadius: 8,
+                    maxBarThickness: 48
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => formatNumber(ctx.parsed.y)
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        title: { display: false },
+                        ticks: { color: '#283593', font: { size: 13 } },
+                        grid: { color: '#e3e8f3' }
+                    },
+                    y: {
+                        title: { display: true, text: 'Drug Deaths', color: '#1a237e', font: { weight: 600 } },
+                        ticks: {
+                            color: '#283593',
+                            font: { size: 12 },
+                            callback: value => formatNumber(value)
+                        },
+                        grid: { color: '#e3e8f3' }
+                    }
+                }
+            }
+        });
+    }
+
+    function renderAgeBarChart(data) {
+        const ctx = document.getElementById('ageBarChart').getContext('2d');
+        if (ageBarChartInstance) ageBarChartInstance.destroy();
+        ageBarChartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: AGE_CATEGORIES,
+                datasets: [{
+                    label: 'Drug Deaths',
+                    data: data,
+                    backgroundColor: '#1a237e',
+                    borderRadius: 7,
+                    maxBarThickness: 22
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => formatNumber(ctx.parsed.y)
+                        }
+                    }
+                },
+                indexAxis: 'y',
+                scales: {
+                    x: {
+                        title: { display: true, text: 'Drug Deaths', color: '#1a237e', font: { weight: 600 } },
+                        ticks: {
+                            color: '#283593',
+                            font: { size: 12 },
+                            callback: value => formatNumber(value)
+                        },
+                        grid: { color: '#e3e8f3' }
+                    },
+                    y: {
+                        title: { display: false },
+                        ticks: { color: '#283593', font: { size: 11 } },
+                        grid: { color: '#e3e8f3' }
+                    }
+                }
+            }
+        });
+    }
+
+    // --- Main Handler ---
+    document.getElementById('csvFileInput').addEventListener('change', function(e) {
+        clearError();
+        const file = e.target.files[0];
+        if (!file) {
+            showError('Please select a CSV file.');
+            return;
+        }
+        if (!file.name.match(/\.csv$/i)) {
+            showError('Invalid file type. Please upload a CSV file.');
+            return;
+        }
+        Papa.parse(file, {
+            header: true,
+            skipEmptyLines: true,
+            complete: function(results) {
+                if (results.errors && results.errors.length > 0) {
+                    showError('Error parsing CSV: ' + results.errors[0].message);
+                    return;
+                }
+                try {
+                    const data = results.data;
+                    // Validate required columns
+                    const requiredCols = ['location_name', 'year', 'drugs_deaths', 'sex_name', 'age_name'];
+                    for (const col of requiredCols) {
+                        if (!results.meta.fields.includes(col)) {
+                            showError(`Missing required column: "${col}"`);
+                            return;
+                        }
+                    }
+                    const processed = processData(data);
+
+                    // Update metrics
+                    document.getElementById('total-deaths').textContent = formatNumber(processed.totalDeaths);
+                    document.getElementById('avg-annual-deaths').textContent = formatFloat(processed.avgAnnualDeaths);
+                    document.getElementById('peak-year').textContent = processed.peakYear;
+
+                    // Render charts
+                    renderLineChart(processed.deathsOverTime);
+                    renderSexBarChart(processed.deathsBySexArr);
+                    renderAgeBarChart(processed.deathsByAgeArr);
+
+                } catch (err) {
+                    showError('An error occurred while processing the data. Please check your CSV file.');
+                    console.error(err);
+                }
+            },
+            error: function(err) {
+                showError('Failed to read file: ' + err.message);
+            }
+        });
+    });
+
+    // --- Initial Chart Placeholders (empty) ---
+    window.addEventListener('DOMContentLoaded', function() {
+        // Empty charts with zero data for initial load
+        renderLineChart(YEARS.map(() => 0));
+        renderSexBarChart(SEX_CATEGORIES.map(() => 0));
+        renderAgeBarChart(AGE_CATEGORIES.map(() => 0));
+    });
+    </script>
+</body>
+</html>

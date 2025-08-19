@@ -1,0 +1,91 @@
+{
+  "title": "USA Alcohol and Drug-Related Deaths (1990–2019)",
+  "description": "Focuses on alcohol- and drug-attributable deaths in the United States from 1990 to 2019. All cards and charts should be filtered to location_name in ['United States', 'United States of America'] and year between 1990 and 2019, inclusive.",
+  "cards": [
+    {
+      "title": "Total Alcohol-Related Deaths (1990–2019, USA)",
+      "value_expression": "df.loc[df['location_name'].isin(['United States','United States of America']) & df['year'].between(1990, 2019), 'alc_deaths'].sum()",
+      "card_type": "metric",
+      "description": "Sum of alcohol-attributable deaths in the USA across all ages and sexes from 1990 to 2019.",
+      "format_hint": "{:,.0f}",
+      "columns_used": [
+        "location_name",
+        "year",
+        "alc_deaths"
+      ]
+    },
+    {
+      "title": "Total Drug-Related Deaths (1990–2019, USA)",
+      "value_expression": "df.loc[df['location_name'].isin(['United States','United States of America']) & df['year'].between(1990, 2019), 'drugs_deaths'].sum()",
+      "card_type": "metric",
+      "description": "Sum of drug-attributable deaths in the USA across all ages and sexes from 1990 to 2019.",
+      "format_hint": "{:,.0f}",
+      "columns_used": [
+        "location_name",
+        "year",
+        "drugs_deaths"
+      ]
+    },
+    {
+      "title": "Alcohol Share of Alcohol + Drug Deaths",
+      "value_expression": "(df.loc[df['location_name'].isin(['United States','United States of America']) & df['year'].between(1990, 2019), 'alc_deaths'].sum()) / ((df.loc[df['location_name'].isin(['United States','United States of America']) & df['year'].between(1990, 2019), 'alc_deaths'].sum()) + (df.loc[df['location_name'].isin(['United States','United States of America']) & df['year'].between(1990, 2019), 'drugs_deaths'].sum()))",
+      "card_type": "percentage",
+      "description": "Percentage of combined alcohol and drug deaths attributable to alcohol in the USA over 1990–2019.",
+      "format_hint": "{:.1%}",
+      "columns_used": [
+        "location_name",
+        "year",
+        "alc_deaths",
+        "drugs_deaths"
+      ]
+    }
+  ],
+  "charts": [
+    {
+      "title": "Annual Alcohol-Related Deaths by Sex (USA, 1990–2019)",
+      "chart_type": "line",
+      "x_axis": "year",
+      "y_axis": "alc_deaths",
+      "aggregation": "sum",
+      "group_by": "sex_name",
+      "description": "Trend of alcohol-attributable deaths over time, grouped by sex. Filter to USA and years 1990–2019; aggregated across all ages.",
+      "columns_used": [
+        "year",
+        "sex_name",
+        "location_name",
+        "alc_deaths"
+      ]
+    },
+    {
+      "title": "Annual Drug-Related Deaths by Sex (USA, 1990–2019)",
+      "chart_type": "line",
+      "x_axis": "year",
+      "y_axis": "drugs_deaths",
+      "aggregation": "sum",
+      "group_by": "sex_name",
+      "description": "Trend of drug-attributable deaths over time, grouped by sex. Filter to USA and years 1990–2019; aggregated across all ages.",
+      "columns_used": [
+        "year",
+        "sex_name",
+        "location_name",
+        "drugs_deaths"
+      ]
+    },
+    {
+      "title": "Drug-Related Deaths by Age Group and Sex (USA, 1990–2019)",
+      "chart_type": "bar",
+      "x_axis": "age_name",
+      "y_axis": "drugs_deaths",
+      "aggregation": "sum",
+      "group_by": "sex_name",
+      "description": "Total drug-attributable deaths aggregated over 1990–2019 by age group and sex. Filter to USA; sort bars by total to highlight highest-burden age groups.",
+      "columns_used": [
+        "age_name",
+        "sex_name",
+        "location_name",
+        "year",
+        "drugs_deaths"
+      ]
+    }
+  ]
+}

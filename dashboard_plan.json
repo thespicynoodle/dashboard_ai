@@ -1,0 +1,97 @@
+{
+  "title": "Simple Sales Dashboard",
+  "description": "A concise dashboard providing an overview of sales performance, product categories, and customer satisfaction across regions.",
+  "cards": [
+    {
+      "title": "Total Sales Amount",
+      "value_expression": "df[\"sales_amount\"].sum()",
+      "card_type": "metric",
+      "description": "Sum of all sales transactions in the dataset.",
+      "format_hint": "${:,.2f}",
+      "columns_used": [
+        "sales_amount"
+      ]
+    },
+    {
+      "title": "Total Quantity Sold",
+      "value_expression": "df[\"quantity\"].sum()",
+      "card_type": "metric",
+      "description": "Total number of items sold across all products.",
+      "format_hint": "{:,}",
+      "columns_used": [
+        "quantity"
+      ]
+    },
+    {
+      "title": "Average Customer Rating",
+      "value_expression": "df[\"customer_rating\"].mean()",
+      "card_type": "kpi",
+      "description": "Average customer rating for all sales.",
+      "format_hint": "{:.2f}",
+      "columns_used": [
+        "customer_rating"
+      ]
+    }
+  ],
+  "charts": [
+    {
+      "title": "Sales Amount by Category",
+      "chart_type": "bar",
+      "x_axis": "category",
+      "y_axis": "sales_amount",
+      "aggregation": "sum",
+      "group_by": "category",
+      "description": "Shows total sales amount for each product category.",
+      "columns_used": [
+        "category",
+        "sales_amount"
+      ],
+      "categories": [
+        "Electronics",
+        "Accessories",
+        "Tools",
+        "Gadgets"
+      ]
+    },
+    {
+      "title": "Quantity Sold by Region",
+      "chart_type": "bar",
+      "x_axis": "region",
+      "y_axis": "quantity",
+      "aggregation": "sum",
+      "group_by": "region",
+      "description": "Displays the total quantity of products sold in each region.",
+      "columns_used": [
+        "region",
+        "quantity"
+      ],
+      "categories": [
+        "North",
+        "South",
+        "East",
+        "West",
+        "Central"
+      ]
+    },
+    {
+      "title": "Average Customer Rating Over Time",
+      "chart_type": "line",
+      "x_axis": "sale_date",
+      "y_axis": "customer_rating",
+      "aggregation": "mean",
+      "group_by": "sale_date",
+      "description": "Tracks the average customer rating for each sale date to observe trends in customer satisfaction.",
+      "columns_used": [
+        "sale_date",
+        "customer_rating"
+      ],
+      "categories": [
+        "2024-01-15",
+        "2024-01-16",
+        "2024-01-17",
+        "2024-01-18",
+        "2024-01-19"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,4 @@
+id,name,age,city,is_student
+1,Alice,25,New York,True
+2,Bob,30,Los Angeles,False
+3,Charlie,22,New York,True

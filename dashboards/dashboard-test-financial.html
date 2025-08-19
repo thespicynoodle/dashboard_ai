@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sales Performance Dashboard</title>
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Bootstrap Icons (optional, for a more polished look) -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <!-- Papa Parse -->
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <style>
+    :root{
+      --navy-900:#0b1f3a;
+      --navy-800:#0f2b52;
+      --navy-700:#133462;
+      --navy-600:#184477;
+      --navy-500:#205694;
+      --blue-400:#3a79c7;
+      --blue-300:#6aa4ea;
+      --blue-200:#a3c6f4;
+      --gray-50:#f7f9fc;
+      --gray-100:#eef2f7;
+      --success-500:#16a34a;
+      --warning-500:#d97706;
+      --danger-500:#dc2626;
+    }
+
+    html, body {
+      height: 100%;
+      background: linear-gradient(180deg, #ffffff 0%, #f6f8fb 100%);
+      color: #12263a;
+    }
+
+    .dashboard-header {
+      background: radial-gradient(1200px 600px at 10% 0%, var(--navy-700) 0%, var(--navy-900) 60%);
+      color: #fff;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .dashboard-header .title {
+      font-weight: 700;
+      letter-spacing: 0.3px;
+    }
+    .dashboard-header .subtitle {
+      color: rgba(255,255,255,0.85);
+    }
+
+    .upload-card {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      backdrop-filter: blur(6px);
+      border-radius: 12px;
+      padding: 1rem;
+    }
+    .upload-card label {
+      font-weight: 600;
+    }
+
+    .metric-card {
+      background: #ffffff;
+      border: 1px solid #e8edf3;
+      border-radius: 16px;
+      box-shadow: 0 8px 24px rgba(10, 40, 80, 0.08);
+      padding: 1.25rem 1.25rem;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      height: 100%;
+    }
+    .metric-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 30px rgba(10, 40, 80, 0.12);
+    }
+    .metric-label {
+      color: var(--navy-700);
+      font-weight: 700;
+      font-size: 0.95rem;
+      letter-spacing: 0.3px;
+      text-transform: uppercase;
+    }
+    .metric-desc {
+      color: #6b7a90;
+      font-size: 0.88rem;
+    }
+    .metric-value {
+      color: var(--navy-900);
+      font-weight: 800;
+      font-size: 2.0rem;
+      line-height: 1.2;
+    }
+    .metric-icon {
+      width: 44px;
+      height: 44px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--navy-600), var(--navy-800));
+      color: #fff;
+      box-shadow: 0 6px 14px rgba(16, 56, 100, 0.25);
+    }
+
+    .panel {
+      background: #ffffff;
+      border: 1px solid #e8edf3;
+      border-radius: 16px;
+      box-shadow: 0 8px 24px rgba(10, 40, 80, 0.08);
+      padding: 1rem 1rem;
+      height: 100%;
+    }
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.5rem 0.5rem 0.25rem;
+    }
+    .panel-title {
+      margin: 0;
+      font-weight: 700;
+      color: var(--navy-800);
+      font-size: 1.05rem;
+      letter-spacing: 0.2px;
+    }
+    .chart-wrap {
+      position: relative;
+      height: 320px;
+      margin-top: 0.5rem;
+    }
+
+    .small-muted {
+      color: #6b7a90;
+      font-size: 0.85rem;
+    }
+
+    .status-badge {
+      background: #eef6ff;
+      color: var(--navy-700);
+      border: 1px solid #dbe8ff;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .footer-note {
+      color: #6b7a90;
+      font-size: 0.85rem;
+    }
+
+    .placeholder-msg {
+      position: absolute;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      color: #5a6b82;
+      padding: 1rem;
+    }
+    .placeholder-msg.active {
+      display: flex;
+    }
+
+    .visually-hidden {
+      position: absolute !important;
+      height: 1px; width: 1px;
+      overflow: hidden;
+      clip: rect(1px, 1px, 1px, 1px);
+      white-space: nowrap;
+    }
+
+    .spinner-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(11,31,58,0.40);
+      backdrop-filter: blur(3px);
+      z-index: 1055;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+    }
+    .spinner-overlay.active {
+      display: flex;
+    }
+
+    .brand-accent {
+      color: var(--blue-300);
+    }
+
+    @media (max-width: 575.98px) {
+      .chart-wrap { height: 260px; }
+      .metric-value { font-size: 1.6rem; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Global Spinner -->
+  <div id="spinnerOverlay" class="spinner-overlay" role="status" aria-live="polite" aria-busy="true">
+    <div class="text-center">
+      <div class="spinner-border text-light" role="status" aria-hidden="true"></div>
+      <div class="mt-3 fw-semibold">Processing data…</div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="position-fixed top-0 end-0 p-3" style="z-index: 1080">
+    <div id="toast" class="toast align-items-center border-0 text-white" role="alert" aria-live="assertive" aria-atomic="true">
+      <div class="d-flex">
+        <div id="toastBody" class="toast-body"></div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <header class="dashboard-header py-4">
+    <div class="container-xl">
+      <div class="row g-3 align-items-center">
+        <div class="col-12 col-lg-8">
+          <h1 class="title h2 mb-1">Sales Performance Dashboard</h1>
+          <p class="subtitle mb-0">Overview of total revenue, units sold, and customer satisfaction with insights by category, time, and region.</p>
+        </div>
+        <div class="col-12 col-lg-4">
+          <div class="upload-card">
+            <label for="fileInput" class="form-label mb-1">
+              <i class="bi bi-cloud-arrow-up-fill me-2 brand-accent"></i>
+              Load CSV Data
+            </label>
+            <input id="fileInput" class="form-control form-control-sm" type="file" accept=".csv" />
+            <div class="d-flex justify-content-between align-items-center mt-2">
+              <small class="small-muted">Choose a CSV file (e.g., sample_sales_data.csv)</small>
+              <span class="status-badge" id="fileStatus">No file loaded</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Content -->
+  <main class="py-4">
+    <div class="container-xl">
+      <!-- Metrics Row -->
+      <div class="row g-3">
+        <div class="col-12 col-md-4">
+          <div class="metric-card">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <div>
+                <div class="metric-label">Total Revenue</div>
+                <div class="metric-desc">Sum of all sales revenue.</div>
+              </div>
+              <div class="metric-icon" aria-hidden="true"><i class="bi bi-currency-dollar"></i></div>
+            </div>
+            <div id="totalRevenue" class="metric-value">—</div>
+          </div>
+        </div>
+        <div class="col-12 col-md-4">
+          <div class="metric-card">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <div>
+                <div class="metric-label">Total Units Sold</div>
+                <div class="metric-desc">Total quantity of items sold.</div>
+              </div>
+              <div class="metric-icon" aria-hidden="true"><i class="bi bi-box-seam"></i></div>
+            </div>
+            <div id="totalUnits" class="metric-value">—</div>
+          </div>
+        </div>
+        <div class="col-12 col-md-4">
+          <div class="metric-card">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <div>
+                <div class="metric-label">Average Customer Rating</div>
+                <div class="metric-desc">Average of customer ratings across all orders.</div>
+              </div>
+              <div class="metric-icon" aria-hidden="true"><i class="bi bi-star-fill"></i></div>
+            </div>
+            <div id="avgRating" class="metric-value">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Charts Row -->
+      <div class="row g-3 mt-1">
+        <div class="col-12 col-lg-4">
+          <div class="panel">
+            <div class="panel-header">
+              <h3 class="panel-title">Revenue by Category</h3>
+              <span class="small-muted">Bar</span>
+            </div>
+            <div class="chart-wrap">
+              <canvas id="chartCategory" aria-label="Bar chart of revenue by category" role="img"></canvas>
+              <div id="placeholderCategory" class="placeholder-msg">Upload a CSV to visualize revenue by category.</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-lg-4">
+          <div class="panel">
+            <div class="panel-header">
+              <h3 class="panel-title">Daily Revenue Trend</h3>
+              <span class="small-muted">Line</span>
+            </div>
+            <div class="chart-wrap">
+              <canvas id="chartDaily" aria-label="Line chart of daily revenue trend" role="img"></canvas>
+              <div id="placeholderDaily" class="placeholder-msg">Upload a CSV to visualize daily revenue trends.</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-lg-4">
+          <div class="panel">
+            <div class="panel-header">
+              <h3 class="panel-title">Revenue by Region</h3>
+              <span class="small-muted">Pie</span>
+            </div>
+            <div class="chart-wrap">
+              <canvas id="chartRegion" aria-label="Pie chart of revenue by region" role="img"></canvas>
+              <div id="placeholderRegion" class="placeholder-msg">Upload a CSV to visualize revenue by region.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row mt-3">
+        <div class="col-12">
+          <p class="footer-note">
+            Expected CSV columns: sales_amount, quantity, customer_rating, category, sale_date, region. Dates should be parseable (e.g., 2025-01-31).
+          </p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+    // Chart references to allow destroy/re-render
+    const charts = {
+      category: null,
+      daily: null,
+      region: null
+    };
+
+    // Theme defaults for Chart.js
+    Chart.defaults.color = '#223854';
+    Chart.defaults.font.family = '"Inter", system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji"';
+    Chart.defaults.plugins.legend.labels.boxWidth = 14;
+    Chart.defaults.plugins.legend.labels.boxHeight = 14;
+
+    const toastEl = document.getElementById('toast');
+    const toastBodyEl = document.getElementById('toastBody');
+    const bsToast = new bootstrap.Toast(toastEl, { delay: 4500 });
+
+    function notify(message, type = 'info') {
+      const palette = {
+        info: 'bg-primary',
+        success: 'bg-success',
+        warning: 'bg-warning',
+        danger: 'bg-danger'
+      };
+      // Reset classes
+      toastEl.className = 'toast align-items-center border-0 text-white';
+      toastEl.classList.add(palette[type] || 'bg-primary');
+      toastBodyEl.textContent = message;
+      bsToast.show();
+    }
+
+    const spinner = {
+      show() { document.getElementById('spinnerOverlay').classList.add('active'); },
+      hide() { document.getElementById('spinnerOverlay').classList.remove('active'); }
+    };
+
+    const currencyFormatter = new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD', maximumFractionDigits: 2 });
+    const numberFormatter = new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 });
+
+    function parseCurrency(val) {
+      if (val === null || val === undefined) return NaN;
+      if (typeof val === 'number') return val;
+      // Remove common currency symbols and thousand separators
+      const clean = String(val).replace(/[^0-9.\-]/g, '');
+      const num = parseFloat(clean);
+      return isNaN(num) ? NaN : num;
+    }
+
+    function parseNumber(val) {
+      if (val === null || val === undefined) return NaN;
+      if (typeof val === 'number') return val;
+      const num = parseFloat(String(val).replace(/,/g, ''));
+      return isNaN(num) ? NaN : num;
+    }
+
+    function toDateOnlyString(input) {
+      if (!input) return null;
+      const d = new Date(input);
+      if (isNaN(d.getTime())) return null;
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    }
+
+    function setPlaceholders(active) {
+      const ids = ['placeholderCategory','placeholderDaily','placeholderRegion'];
+      ids.forEach(id => {
+        const el = document.getElementById(id);
+        if (active) el.classList.add('active');
+        else el.classList.remove('active');
+      });
+    }
+
+    function clearCharts() {
+      Object.keys(charts).forEach(k => {
+        if (charts[k]) {
+          try { charts[k].destroy(); } catch(e) {}
+          charts[k] = null;
+        }
+      });
+    }
+
+    function updateCards(metrics) {
+      const { totalRevenue, totalUnits, avgRating } = metrics;
+      document.getElementById('totalRevenue').textContent =
+        isFinite(totalRevenue) ? currencyFormatter.format(totalRevenue) : '—';
+      document.getElementById('totalUnits').textContent =
+        isFinite(totalUnits) ? numberFormatter.format(totalUnits) : '—';
+      document.getElementById('avgRating').textContent =
+        isFinite(avgRating) ? `${avgRating.toFixed(2)} / 5` : '—';
+    }
+
+    function friendlyPalette(count) {
+      const blues = [
+        '#123b74', '#165aa5', '#2d7dd2', '#4fa3f7', '#86c5ff', '#1e3a8a',
+        '#0f4c81', '#2b6cb0', '#3b82f6', '#60a5fa', '#93c5fd', '#1d4ed8'
+      ];
+      // Cycle if needed
+      return Array.from({length: count}, (_, i) => blues[i % blues.length]);
+    }
+
+    function createBarChart(ctx, labels, data) {
+      return new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [{
+            label: 'Revenue',
+            data,
+            backgroundColor: 'rgba(32, 86, 148, 0.85)',
+            hoverBackgroundColor: 'rgba(26, 72, 124, 0.95)',
+            borderRadius: 8,
+            borderSkipped: false
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: { ticks: { maxRotation: 0 } },
+            y: { beginAtZero: true, ticks: { callback: v => currencyFormatter.format(v) } }
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => ` ${currencyFormatter.format(ctx.parsed.y)}`
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function createLineChart(ctx, labels, data) {
+      return new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [{
+            label: 'Revenue',
+            data,
+            borderColor: '#2d7dd2',
+            backgroundColor: 'rgba(45, 125, 210, 0.15)',
+            fill: true,
+            tension: 0.3,
+            pointRadius: 2.5,
+            pointHoverRadius: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: { ticks: { maxRotation: 0 } },
+            y: { beginAtZero: true, ticks: { callback: v => currencyFormatter.format(v) } }
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => ` ${currencyFormatter.format(ctx.parsed.y)}`
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function createPieChart(ctx, labels, data) {
+      const colors = friendlyPalette(labels.length);
+      return new Chart(ctx, {
+        type: 'pie',
+        data: {
+          labels,
+          datasets: [{
+            data,
+            backgroundColor: colors.map(c => c),
+            borderColor: '#ffffff',
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom' },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => {
+                  const total = ctx.dataset.data.reduce((a,b)=>a+b,0) || 0;
+                  const val = ctx.parsed || 0;
+                  const pct = total ? ((val/total)*100).toFixed(1) : 0;
+                  return ` ${ctx.label}: ${currencyFormatter.format(val)} (${pct}%)`;
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function processData(rows) {
+      // Normalize headers and map rows
+      const normalized = rows.map(r => {
+        const obj = {};
+        for (const k in r) {
+          if (!Object.hasOwn(r,k)) continue;
+          obj[String(k).trim().toLowerCase()] = r[k];
+        }
+        return obj;
+      });
+
+      // Column presence check
+      const sample = normalized[0] || {};
+      const required = ['sales_amount','quantity','customer_rating','category','sale_date','region'];
+      const missing = required.filter(c => !(c in sample));
+      if (missing.length > 0) {
+        notify(`Missing columns: ${missing.join(', ')}. Charts/metrics will use available fields.`, 'warning');
+      }
+
+      let totalRevenue = 0;
+      let totalUnits = 0;
+      let ratingSum = 0;
+      let ratingCount = 0;
+
+      const byCategory = new Map();
+      const byDate = new Map();
+      const byRegion = new Map();
+
+      for (const row of normalized) {
+        const revenue = parseCurrency(row['sales_amount']);
+        const qty = parseNumber(row['quantity']);
+        const rating = parseNumber(row['customer_rating']);
+        const category = (row['category'] ?? 'Unknown').toString().trim() || 'Unknown';
+        const region = (row['region'] ?? 'Unknown').toString().trim() || 'Unknown';
+        const dateKey = toDateOnlyString(row['sale_date']);
+
+        if (isFinite(revenue)) {
+          totalRevenue += revenue;
+          // Aggregations:
+          byCategory.set(category, (byCategory.get(category) || 0) + revenue);
+          byRegion.set(region, (byRegion.get(region) || 0) + revenue);
+          if (dateKey) {
+            byDate.set(dateKey, (byDate.get(dateKey) || 0) + revenue);
+          }
+        }
+        if (isFinite(qty)) {
+          totalUnits += qty;
+        }
+        if (isFinite(rating)) {
+          ratingSum += rating;
+          ratingCount += 1;
+        }
+      }
+
+      const avgRating = ratingCount ? ratingSum / ratingCount : NaN;
+
+      // Prepare arrays
+      const catLabels = Array.from(byCategory.keys());
+      const catData = Array.from(byCategory.values());
+
+      const dateLabels = Array.from(byDate.keys()).sort((a,b)=> a < b ? -1 : 1);
+      const dateData = dateLabels.map(d => byDate.get(d) || 0);
+
+      const regionLabels = Array.from(byRegion.keys());
+      const regionData = Array.from(byRegion.values());
+
+      return {
+        metrics: { totalRevenue, totalUnits, avgRating },
+        category: { labels: catLabels, data: catData },
+        daily: { labels: dateLabels, data: dateData },
+        region: { labels: regionLabels, data: regionData }
+      };
+    }
+
+    function renderAll(d) {
+      updateCards(d.metrics);
+
+      // Placeholders visibility
+      const hasCategory = d.category.labels.length > 0;
+      const hasDaily = d.daily.labels.length > 0;
+      const hasRegion = d.region.labels.length > 0;
+
+      document.getElementById('placeholderCategory').classList.toggle('active', !hasCategory);
+      document.getElementById('placeholderDaily').classList.toggle('active', !hasDaily);
+      document.getElementById('placeholderRegion').classList.toggle('active', !hasRegion);
+
+      clearCharts();
+      try {
+        if (hasCategory) {
+          const ctx1 = document.getElementById('chartCategory').getContext('2d');
+          charts.category = createBarChart(ctx1, d.category.labels, d.category.data);
+        }
+        if (hasDaily) {
+          const ctx2 = document.getElementById('chartDaily').getContext('2d');
+          charts.daily = createLineChart(ctx2, d.daily.labels, d.daily.data);
+        }
+        if (hasRegion) {
+          const ctx3 = document.getElementById('chartRegion').getContext('2d');
+          charts.region = createPieChart(ctx3, d.region.labels, d.region.data);
+        }
+      } catch (err) {
+        console.error('Chart rendering error:', err);
+        notify('An error occurred while rendering charts. See console for details.', 'danger');
+      }
+    }
+
+    function parseCSVFile(file) {
+      return new Promise((resolve, reject) => {
+        Papa.parse(file, {
+          header: true,
+          skipEmptyLines: true,
+          worker: true,
+          complete: results => {
+            if (results.errors && results.errors.length) {
+              console.warn('Parse warnings:', results.errors);
+            }
+            if (!results.data || results.data.length === 0) {
+              return reject(new Error('The CSV appears to be empty.'));
+            }
+            resolve(results.data);
+          },
+          error: err => reject(err)
+        });
+      });
+    }
+
+    async function handleFile(file) {
+      if (!file) return;
+      document.getElementById('fileStatus').textContent = `Loading: ${file.name}`;
+      spinner.show();
+      try {
+        const rows = await parseCSVFile(file);
+        const data = processData(rows);
+        renderAll(data);
+        document.getElementById('fileStatus').textContent = `Loaded: ${file.name}`;
+        notify('Data loaded successfully.', 'success');
+      } catch (err) {
+        console.error(err);
+        document.getElementById('fileStatus').textContent = 'Load failed';
+        notify(`Failed to load CSV: ${err.message || err}`, 'danger');
+        setPlaceholders(true);
+        clearCharts();
+        updateCards({ totalRevenue: NaN, totalUnits: NaN, avgRating: NaN });
+      } finally {
+        spinner.hide();
+      }
+    }
+
+    // Drag & Drop (optional, convenient)
+    function enableDragDrop(area) {
+      const prevent = e => { e.preventDefault(); e.stopPropagation(); };
+      ['dragenter','dragover','dragleave','drop'].forEach(evt => area.addEventListener(evt, prevent));
+      ['dragenter','dragover'].forEach(evt => area.addEventListener(evt, () => area.classList.add('border-primary')));
+      ['dragleave','drop'].forEach(evt => area.addEventListener(evt, () => area.classList.remove('border-primary')));
+      area.addEventListener('drop', (e) => {
+        const file = e.dataTransfer.files && e.dataTransfer.files[0];
+        if (file && file.name.toLowerCase().endsWith('.csv')) {
+          handleFile(file);
+        } else {
+          notify('Please drop a valid .csv file.', 'warning');
+        }
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      setPlaceholders(true);
+      const fileInput = document.getElementById('fileInput');
+      fileInput.addEventListener('change', e => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        if (!file.name.toLowerCase().endsWith('.csv')) {
+          notify('Please select a valid .csv file.', 'warning');
+          return;
+        }
+        handleFile(file);
+      });
+
+      // Make the upload card a drop-zone for convenience
+      enableDragDrop(document.querySelector('.upload-card'));
+    });
+  </script>
+</body>
+</html>

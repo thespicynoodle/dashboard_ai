@@ -1,0 +1,117 @@
+{
+  "title": "Drug-Related Deaths in the USA (1990-2019) Dashboard",
+  "description": "This dashboard provides a focused analysis of drug-related deaths in the United States of America from 1990 to 2019. It highlights key metrics and visualizes trends by year, sex, and age group to support public health insights and policy decisions.",
+  "cards": [
+    {
+      "title": "Total Drug Deaths (USA, 1990-2019)",
+      "value_expression": "df[(df['location_name']=='United States of America') & (df['year']>=1990) & (df['year']<=2019)]['drugs_deaths'].sum()",
+      "card_type": "metric",
+      "description": "Total number of drug-related deaths in the USA from 1990 to 2019.",
+      "format_hint": "{:,}",
+      "columns_used": [
+        "location_name",
+        "year",
+        "drugs_deaths"
+      ]
+    },
+    {
+      "title": "Average Annual Drug Deaths (USA, 1990-2019)",
+      "value_expression": "df[(df['location_name']=='United States of America') & (df['year']>=1990) & (df['year']<=2019)].groupby('year')['drugs_deaths'].sum().mean()",
+      "card_type": "kpi",
+      "description": "Average number of drug-related deaths per year in the USA over the period 1990-2019.",
+      "format_hint": "{:,.0f}",
+      "columns_used": [
+        "location_name",
+        "year",
+        "drugs_deaths"
+      ]
+    },
+    {
+      "title": "Peak Year for Drug Deaths (USA, 1990-2019)",
+      "value_expression": "df[(df['location_name']=='United States of America') & (df['year']>=1990) & (df['year']<=2019)].groupby('year')['drugs_deaths'].sum().idxmax()",
+      "card_type": "count",
+      "description": "The year with the highest total drug-related deaths in the USA between 1990 and 2019.",
+      "format_hint": "{}",
+      "columns_used": [
+        "location_name",
+        "year",
+        "drugs_deaths"
+      ]
+    }
+  ],
+  "charts": [
+    {
+      "title": "Drug Deaths Over Time in the USA (1990-2019)",
+      "chart_type": "line",
+      "x_axis": "year",
+      "y_axis": "drugs_deaths",
+      "aggregation": "sum",
+      "group_by": null,
+      "description": "Shows the trend of total drug-related deaths in the USA from 1990 to 2019, highlighting increases or decreases over time.",
+      "columns_used": [
+        "location_name",
+        "year",
+        "drugs_deaths"
+      ],
+      "categories": null
+    },
+    {
+      "title": "Drug Deaths by Sex in the USA (1990-2019)",
+      "chart_type": "bar",
+      "x_axis": "sex_name",
+      "y_axis": "drugs_deaths",
+      "aggregation": "sum",
+      "group_by": "sex_name",
+      "description": "Compares the total number of drug-related deaths between males and females in the USA over the period 1990-2019.",
+      "columns_used": [
+        "location_name",
+        "year",
+        "sex_name",
+        "drugs_deaths"
+      ],
+      "categories": [
+        "Male",
+        "Female"
+      ]
+    },
+    {
+      "title": "Drug Deaths by Age Group in the USA (1990-2019)",
+      "chart_type": "bar",
+      "x_axis": "age_name",
+      "y_axis": "drugs_deaths",
+      "aggregation": "sum",
+      "group_by": "age_name",
+      "description": "Displays total drug-related deaths by age group in the USA from 1990 to 2019, helping to identify which age groups are most affected.",
+      "columns_used": [
+        "location_name",
+        "year",
+        "age_name",
+        "drugs_deaths"
+      ],
+      "categories": [
+        "95+ years",
+        "12-23 months",
+        "5-9 years",
+        "10-14 years",
+        "15-19 years",
+        "20-24 years",
+        "25-29 years",
+        "30-34 years",
+        "35-39 years",
+        "40-44 years",
+        "45-49 years",
+        "50-54 years",
+        "55-59 years",
+        "60-64 years",
+        "65-69 years",
+        "70-74 years",
+        "75-79 years",
+        "<1 year",
+        "80-84 years",
+        "85-89 years",
+        "90-94 years",
+        "2-4 years"
+      ]
+    }
+  ]
+}
